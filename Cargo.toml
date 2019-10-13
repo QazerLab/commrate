@@ -1,0 +1,13 @@
+[package]
+name = "commrate"
+version = "0.1.0"
+authors = ["Danila Kiver <danila.kiver@mail.ru>"]
+edition = "2018"
+
+[dependencies]
+clap = "2.33.0"
+colored = "1.8.0"
+enumset = "0.4.2"
+git2 = "0.10.1"
+lazy_static = "1.4.0"
+libc = "0.2.62"
