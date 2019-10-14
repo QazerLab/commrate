@@ -34,10 +34,10 @@ fn main() {
     let repo = load_repo(".");
     let revwalk = init_revwalk(&repo, config.start_commit());
 
-    let score_title = if config.show_score() { "SCORE" } else { "GRADE" };
+    let show_score = config.show_score();
+    let score_title = if show_score { "SCORE" } else { "GRADE" };
     println!("{:7} {:5} {:19} {}", "COMMIT", score_title, "AUTHOR", "SUBJECT");
 
-    let show_score = config.show_score();
     let max_commits = config.max_commits().unwrap_or(std::u32::MAX);
     let mut commit_num = 0;
 
