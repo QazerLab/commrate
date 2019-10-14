@@ -97,19 +97,14 @@ fn git_expect<T>(wrapped: Result<T, Error>) -> T {
 }
 
 fn print_commit_stat(commit_info: &CommitInfo, score: &CommitScore, show_score: bool) {
-    let commit = commit_info.commit();
-
-    let id = format!("{}", commit.id());
-    let signature = commit.author();
-    let author = signature.name().unwrap_or("N/A");
-
+    let metadata = commit_info.metadata();
     let msg_info = commit_info.msg_info();
 
     println!(
         "{:7.7} {:<5} {:19.19} {}",
-        id.yellow(),
+        metadata.id().yellow(),
         score.to_string(show_score),
-        author,
+        metadata.author(),
         msg_info.subject().unwrap_or("")
     );
 }

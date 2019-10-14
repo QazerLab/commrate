@@ -136,16 +136,15 @@ impl ScoringRule for BodyLenRule {
             return 1.0;
         }
 
-        let stats_option = commit.diff_stats();
-        if stats_option.is_none() {
+        let diff_option = commit.diff_info();
+        if diff_option.is_none() {
             // XXX: this may happen only for merge commits,
             // which should not reach here.
             // Maybe panic instead of graceful return?
             return 1.0;
         }
 
-        let diff_stats = stats_option.as_ref().unwrap();
-        let diff_size = diff_stats.insertions() + diff_stats.deletions();
+        let diff_size = diff_option.as_ref().unwrap().diff_total();
         let body_len = commit.msg_info().body_len();
 
         // This formula if VERY rough and thus probably should be adjusted

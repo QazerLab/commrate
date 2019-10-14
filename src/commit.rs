@@ -47,6 +47,18 @@ pub enum CommitClass {
 /// A newtype wrapper for implementing Display.
 pub struct CommitClasses(EnumSet<CommitClass>);
 
+pub struct CommitMetadata {
+    id: String,
+    author: String,
+    parents: usize,
+}
+
+pub struct DiffInfo {
+    insertions: usize,
+    deletions: usize,
+    diff_total: usize,
+}
+
 #[derive(Default, Debug)]
 pub struct MessageInfo<'repo> {
     subject: Option<&'repo str>,
@@ -58,8 +70,8 @@ pub struct MessageInfo<'repo> {
 }
 
 pub struct CommitInfo<'repo> {
-    commit: &'repo Commit<'repo>,
-    diff_stats: Option<DiffStats>,
+    metadata: CommitMetadata,
+    diff_info: Option<DiffInfo>,
     msg_info: MessageInfo<'repo>,
     classes: CommitClasses,
 }
@@ -119,6 +131,42 @@ impl Display for CommitClasses {
         }
 
         Display::fmt(&buf, f)
+    }
+}
+
+impl CommitMetadata {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn author(&self) -> &str {
+        &self.author
+    }
+
+    pub fn parents(&self) -> usize {
+        self.parents
+    }
+}
+
+impl DiffInfo {
+    fn new(stats: &DiffStats) -> DiffInfo {
+        let insertions = stats.insertions();
+        let deletions = stats.deletions();
+        DiffInfo {
+            insertions,
+            deletions,
+            diff_total: insertions + deletions,
+        }
+    }
+
+    pub fn insertions(&self) -> usize {
+        self.insertions
+    }
+    pub fn deletions(&self) -> usize {
+        self.deletions
+    }
+    pub fn diff_total(&self) -> usize {
+        self.diff_total
     }
 }
 
@@ -200,12 +248,12 @@ impl<'repo> MessageInfo<'repo> {
 }
 
 impl<'repo> CommitInfo<'repo> {
-    pub fn commit(&self) -> &Commit<'repo> {
-        self.commit
+    pub fn metadata(&self) -> &CommitMetadata {
+        &self.metadata
     }
 
-    pub fn diff_stats(&self) -> &Option<DiffStats> {
-        &self.diff_stats
+    pub fn diff_info(&self) -> &Option<DiffInfo> {
+        &self.diff_info
     }
 
     pub fn msg_info(&self) -> &MessageInfo {
@@ -218,21 +266,17 @@ impl<'repo> CommitInfo<'repo> {
 }
 
 fn do_classify_commit(
-    commit: &Commit,
-    diff_stats: &DiffStats,
+    metadata: &CommitMetadata,
+    diff_info: &DiffInfo,
     msg_info: &MessageInfo,
 ) -> EnumSet<CommitClass> {
     let mut classes = EnumSet::new();
 
-    if commit.parent_count() == 0 {
+    if metadata.parents() == 0 {
         classes.insert(CommitClass::InitialCommit);
     }
 
-    let diff_insertions = diff_stats.insertions();
-    let diff_deletions = diff_stats.deletions();
-    let diff_total = diff_insertions + diff_deletions;
-
-    if diff_total < SHORT_COMMIT_LENGTH {
+    if diff_info.diff_total() < SHORT_COMMIT_LENGTH {
         classes.insert(CommitClass::ShortCommit);
     }
 
@@ -247,7 +291,7 @@ fn do_classify_commit(
     // False positives are extremely rare, so let's pretend they
     // are absent. At the end of the day, no one will die due to
     // one commit of thousands being *overscored*.
-    if diff_deletions == diff_insertions {
+    if diff_info.deletions() == diff_info.insertions() {
         if let Some(subject) = msg_info.subject() {
             if subject.to_ascii_lowercase().contains("rename") {
                 classes.insert(CommitClass::RenameCommit);
@@ -259,11 +303,11 @@ fn do_classify_commit(
 }
 
 fn classify_commit(
-    commit: &Commit,
-    diff_stats: &DiffStats,
+    metadata: &CommitMetadata,
+    diff_info: &DiffInfo,
     msg_info: &MessageInfo,
 ) -> CommitClasses {
-    CommitClasses(do_classify_commit(commit, diff_stats, msg_info))
+    CommitClasses(do_classify_commit(metadata, diff_info, msg_info))
 }
 
 pub fn parse_commit<'repo>(
@@ -272,10 +316,16 @@ pub fn parse_commit<'repo>(
 ) -> Result<CommitInfo<'repo>, Error> {
     let msg_info = commit.message().map(MessageInfo::new).unwrap_or_default();
 
-    if commit.parent_count() >= 2 {
+    let metadata = CommitMetadata {
+        id: commit.id().to_string(),
+        author: commit.author().name().unwrap().to_string(),
+        parents: commit.parent_count(),
+    };
+
+    if metadata.parents() >= 2 {
         return Ok(CommitInfo {
-            commit,
-            diff_stats: None,
+            metadata,
+            diff_info: None,
             msg_info,
             classes: CommitClasses(EnumSet::from(CommitClass::MergeCommit)),
         });
@@ -288,12 +338,13 @@ pub fn parse_commit<'repo>(
 
     let diff = repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)?;
     let diff_stats = diff.stats()?;
+    let diff_info = DiffInfo::new(&diff_stats);
 
-    let classes = classify_commit(commit, &diff_stats, &msg_info);
+    let classes = classify_commit(&metadata, &diff_info, &msg_info);
 
     Ok(CommitInfo {
-        commit,
-        diff_stats: Some(diff_stats),
+        metadata,
+        diff_info: Some(diff_info),
         msg_info,
         classes,
     })
