@@ -34,9 +34,11 @@ fn main() {
     let repo = load_repo(".");
     let revwalk = init_revwalk(&repo, config.start_commit());
 
-    let show_score = config.show_score();
-    let score_title = if show_score { "SCORE" } else { "GRADE" };
-    println!("{:7} {:5} {:19} {}", "COMMIT", score_title, "AUTHOR", "SUBJECT");
+    let printer = Printer {
+        show_score: config.show_score(),
+    };
+
+    printer.print_header();
 
     let max_commits = config.max_commits().unwrap_or(std::u32::MAX);
     let mut commit_num = 0;
@@ -57,7 +59,7 @@ fn main() {
 
         let commit_info = git_expect(parse_commit(&commit, &repo));
         let score = scorer.score(&commit_info);
-        print_commit_stat(&commit_info, &score, show_score);
+        printer.print_commit(&commit_info, &score);
 
         commit_num += 1;
     }
@@ -96,15 +98,30 @@ fn git_expect<T>(wrapped: Result<T, Error>) -> T {
     }
 }
 
-fn print_commit_stat(commit_info: &CommitInfo, score: &CommitScore, show_score: bool) {
-    let metadata = commit_info.metadata();
-    let msg_info = commit_info.msg_info();
+struct Printer {
+    show_score: bool,
+}
 
-    println!(
-        "{:7.7} {:<5} {:19.19} {}",
-        metadata.id().yellow(),
-        score.to_string(show_score),
-        metadata.author(),
-        msg_info.subject().unwrap_or("")
-    );
+impl Printer {
+    pub fn print_header(&self) {
+        let score_title = if self.show_score { "SCORE" } else { "GRADE" };
+
+        println!(
+            "{:7} {:5} {:19} {}",
+            "COMMIT", score_title, "AUTHOR", "SUBJECT"
+        );
+    }
+
+    fn print_commit(&self, commit_info: &CommitInfo, score: &CommitScore) {
+        let metadata = commit_info.metadata();
+        let msg_info = commit_info.msg_info();
+
+        println!(
+            "{:7.7} {:<5} {:19.19} {}",
+            metadata.id().yellow(),
+            score.to_string(self.show_score),
+            metadata.author(),
+            msg_info.subject().unwrap_or("")
+        );
+    }
 }
