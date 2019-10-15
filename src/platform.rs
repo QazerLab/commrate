@@ -16,7 +16,7 @@ pub fn platform_init() {
 // the SIGPIPE handler to the default one, which would make us behave
 // as the usual UNIX program: die as soon as we receive SIGPIPE.
 //
-// Refrence: https://github.com/rust-lang/rust/issues/46016
+// Reference: https://github.com/rust-lang/rust/issues/46016
 #[cfg(unix)]
 fn reset_sigpipe_handler() {
     unsafe {

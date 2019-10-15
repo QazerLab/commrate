@@ -46,7 +46,7 @@ It is hard for computer to tell for sure which commit is good and which is bad (
 * medium size commits with short commit messages are usually **bad**;
 * huge commits are usually **bad** disregarding the message length.
 
-There are some obvious exceptions to the last assumption: initial commits, some types of refactoring, updates to the vendored dependencies, etc. Some of these exceptions are detected by `commrate` automatically, while some aren't. However, considering that the overall score is based on more than one rule, is is really hard to get the worst grade even when some exceptional case is not handled properly.
+There are some obvious exceptions to the last assumption: initial commits, some types of refactoring, updates to the vendored dependencies, etc. Some of these exceptions are detected by `commrate` automatically, while some aren't. However, considering that the overall score is based on more than one rule, it is really hard to get the worst grade even when some exceptional case is not handled properly.
 
 
 
@@ -56,7 +56,7 @@ Building Commrate
 
 This tool is written in Rust and requires Rust of version 1.37.0 at least.
 
-To build `commrate`, [install](https://doc.rust-lang.org/cargo/getting-started/installation.html) `cargo` and run:
+To build `commrate`, [install](https://doc.rust-lang.org/cargo/getting-started/installation.html) `cargo` and run the following command:
 
 ```
 cargo build --release
