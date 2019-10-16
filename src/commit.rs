@@ -182,11 +182,9 @@ impl<'repo> MessageInfo<'repo> {
         // Here we rely on line numbers, as Git strips
         // leading and trailing empty lines during commit.
         // This means, that the subject is always line 0.
-        let mut line_num = 0;
-        for line in raw_message.lines() {
+        for (line_num, line) in raw_message.lines().enumerate() {
             if line_num == 0 {
                 subject = Some(line);
-                line_num += 1;
                 continue;
             }
 
@@ -208,8 +206,6 @@ impl<'repo> MessageInfo<'repo> {
             if line_len > 80 {
                 body_unwrapped_lines += 1;
             }
-
-            line_num += 1;
         }
 
         MessageInfo {
