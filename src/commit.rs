@@ -1,74 +1,9 @@
 use enumset::{EnumSet, EnumSetType};
-use git2::{Commit, DiffStats, Error, Repository};
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
-/// Maximum diff size (lines total) for short commits.
-pub const SHORT_COMMIT_LENGTH: usize = 25;
-
-/// Commits of different nature require special treatment
-/// disregarging the fact that their actual properties like
-/// diff length or message length are the same: having some
-/// special *semantics* makes these commits not like the
-/// other ones.
-///
-/// Comments for each case of this enum explain, why specific
-/// semantics of specific commit makes it special.
-#[derive(EnumSetType, Debug)]
-pub enum CommitClass {
-    MergeCommit,
-
-    /// Initial commits usually do not have anything else
-    /// a subject "Initial commit" in the message, though
-    /// they frequently have huge diff.
-    InitialCommit,
-
-    /// Short commits may contain some primitive change
-    /// which does not require additional explanations:
-    /// version bumps, typo fixes, etc.
-    ///
-    /// No penalty for message body should be applied to
-    /// such commits.
-    ShortCommit,
-
-    /// Commits whose sole purpose is renaming some file
-    /// or piece of code (e.g. function) usually do not require
-    /// additional explanations and may be described with a
-    /// single subject line, e.g.
-    ///
-    /// "Rename Foo::bar() to Foo::baz()"
-    /// "Rename src/module to src/another_module"
-    ///
-    /// Such commits could be pretty long though, so they
-    /// require special treatment.
-    RenameCommit,
-}
-
-/// A newtype wrapper for implementing Display.
-pub struct CommitClasses(EnumSet<CommitClass>);
-
-pub struct CommitMetadata {
-    id: String,
-    author: String,
-    parents: usize,
-}
-
-pub struct DiffInfo {
-    insertions: usize,
-    deletions: usize,
-    diff_total: usize,
-}
-
-#[derive(Default, Debug)]
-pub struct MessageInfo<'repo> {
-    subject: Option<&'repo str>,
-    break_after_subject: bool,
-    body_len: usize,
-    body_lines: usize,
-    body_unwrapped_lines: usize,
-    metadata_lines: usize,
-}
-
+/// A parsed and classified commit with all the data
+/// required for scoring.
 pub struct CommitInfo<'repo> {
     metadata: CommitMetadata,
     diff_info: Option<DiffInfo>,
@@ -76,65 +11,66 @@ pub struct CommitInfo<'repo> {
     classes: CommitClasses,
 }
 
-lazy_static! {
-    static ref META_KEYS: HashSet<&'static str> = {
-        let mut keys = HashSet::new();
+impl<'repo> CommitInfo<'repo> {
+    pub fn new(metadata: CommitMetadata, diff_info: DiffInfo, msg_info: MessageInfo) -> CommitInfo {
+        let classes = classify_commit(&metadata, &diff_info, &msg_info);
 
-        keys.insert("acked-by");
-        keys.insert("analyzed-by");
-        keys.insert("approved-by");
-        keys.insert("assisted-by");
-        keys.insert("based-on");
-        keys.insert("bisected-by");
-        keys.insert("caught-by");
-        keys.insert("cc");
-        keys.insert("checked-by");
-        keys.insert("co-developed-by");
-        keys.insert("fixed-by");
-        keys.insert("fixes");
-        keys.insert("found-by");
-        keys.insert("investigated-by");
-        keys.insert("link");
-        keys.insert("rebased-by");
-        keys.insert("reported-by");
-        keys.insert("reviewed-by");
-        keys.insert("sent-by");
-        keys.insert("signed-off-by");
-        keys.insert("sponsored-by");
-        keys.insert("submitted-by");
-        keys.insert("suggested-by");
-        keys.insert("tested-by");
-        keys.insert("triaged-by");
-        keys.insert("written-by");
-
-        keys
-    };
-}
-
-impl CommitClasses {
-    pub fn as_set(&self) -> &EnumSet<CommitClass> {
-        &self.0
-    }
-}
-
-impl Display for CommitClasses {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let set_len = self.as_set().len();
-        let mut buf = String::with_capacity(set_len);
-        for class in self.0 {
-            buf.push(match class {
-                CommitClass::MergeCommit => 'M',
-                CommitClass::InitialCommit => 'I',
-                CommitClass::RenameCommit => 'R',
-                CommitClass::ShortCommit => 'S',
-            });
+        CommitInfo {
+            metadata,
+            diff_info: Some(diff_info),
+            msg_info,
+            classes,
         }
-
-        Display::fmt(&buf, f)
     }
+
+    pub fn new_from_merge(metadata: CommitMetadata, msg_info: MessageInfo) -> CommitInfo {
+        let classes = CommitClasses(EnumSet::from(CommitClass::MergeCommit));
+
+        CommitInfo {
+            metadata,
+            diff_info: None,
+            msg_info,
+            classes,
+        }
+    }
+
+    pub fn metadata(&self) -> &CommitMetadata {
+        &self.metadata
+    }
+
+    pub fn diff_info(&self) -> &Option<DiffInfo> {
+        &self.diff_info
+    }
+
+    pub fn msg_info(&self) -> &MessageInfo {
+        &self.msg_info
+    }
+
+    pub fn classes(&self) -> &CommitClasses {
+        &self.classes
+    }
+}
+
+/// A commit metadata, which is easy to obtain from
+/// the repository without any heavy processing.
+///
+/// XXX: do we really need owned Strings here, or there
+/// is a way to decoupe from git2 Oid's pecularities?
+pub struct CommitMetadata {
+    id: String,
+    author: String,
+    parents: usize,
 }
 
 impl CommitMetadata {
+    pub fn new(id: String, author: String, parents: usize) -> CommitMetadata {
+        CommitMetadata {
+            id,
+            author,
+            parents,
+        }
+    }
+
     pub fn id(&self) -> &str {
         &self.id
     }
@@ -148,14 +84,19 @@ impl CommitMetadata {
     }
 }
 
+/// Statistics of specific diff.
+pub struct DiffInfo {
+    insertions: usize,
+    deletions: usize,
+    diff_total: usize,
+}
+
 impl DiffInfo {
-    fn new(stats: &DiffStats) -> DiffInfo {
-        let insertions = stats.insertions();
-        let deletions = stats.deletions();
+    pub fn new(insertions: usize, deletions: usize, diff_total: usize) -> DiffInfo {
         DiffInfo {
             insertions,
             deletions,
-            diff_total: insertions + deletions,
+            diff_total,
         }
     }
 
@@ -168,6 +109,18 @@ impl DiffInfo {
     pub fn diff_total(&self) -> usize {
         self.diff_total
     }
+}
+
+/// `MessageInfo` contains the metrics obtained from
+/// the commit message for scoring.
+#[derive(Default, Debug)]
+pub struct MessageInfo<'repo> {
+    subject: Option<&'repo str>,
+    break_after_subject: bool,
+    body_len: usize,
+    body_lines: usize,
+    body_unwrapped_lines: usize,
+    metadata_lines: usize,
 }
 
 impl<'repo> MessageInfo<'repo> {
@@ -243,22 +196,79 @@ impl<'repo> MessageInfo<'repo> {
     }
 }
 
-impl<'repo> CommitInfo<'repo> {
-    pub fn metadata(&self) -> &CommitMetadata {
-        &self.metadata
-    }
+/// Maximum diff size (lines total) for short commits.
+pub const SHORT_COMMIT_LENGTH: usize = 25;
 
-    pub fn diff_info(&self) -> &Option<DiffInfo> {
-        &self.diff_info
-    }
+/// Commits of different nature require special treatment
+/// disregarging the fact that their actual properties like
+/// diff length or message length are the same: having some
+/// special *semantics* makes these commits not like the
+/// other ones.
+///
+/// Comments for each case of this enum explain, why specific
+/// semantics of specific commit makes it special.
+#[derive(EnumSetType, Debug)]
+pub enum CommitClass {
+    MergeCommit,
 
-    pub fn msg_info(&self) -> &MessageInfo {
-        &self.msg_info
-    }
+    /// Initial commits usually do not have anything else
+    /// a subject "Initial commit" in the message, though
+    /// they frequently have huge diff.
+    InitialCommit,
 
-    pub fn classes(&self) -> &CommitClasses {
-        &self.classes
+    /// Short commits may contain some primitive change
+    /// which does not require additional explanations:
+    /// version bumps, typo fixes, etc.
+    ///
+    /// No penalty for message body should be applied to
+    /// such commits.
+    ShortCommit,
+
+    /// Commits whose sole purpose is renaming some file
+    /// or piece of code (e.g. function) usually do not require
+    /// additional explanations and may be described with a
+    /// single subject line, e.g.
+    ///
+    /// "Rename Foo::bar() to Foo::baz()"
+    /// "Rename src/module to src/another_module"
+    ///
+    /// Such commits could be pretty long though, so they
+    /// require special treatment.
+    RenameCommit,
+}
+
+/// A newtype wrapper for implementing Display.
+pub struct CommitClasses(EnumSet<CommitClass>);
+
+impl Display for CommitClasses {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let set_len = self.as_set().len();
+        let mut buf = String::with_capacity(set_len);
+        for class in self.0 {
+            buf.push(match class {
+                CommitClass::MergeCommit => 'M',
+                CommitClass::InitialCommit => 'I',
+                CommitClass::RenameCommit => 'R',
+                CommitClass::ShortCommit => 'S',
+            });
+        }
+
+        Display::fmt(&buf, f)
     }
+}
+
+impl CommitClasses {
+    pub fn as_set(&self) -> &EnumSet<CommitClass> {
+        &self.0
+    }
+}
+
+fn classify_commit(
+    metadata: &CommitMetadata,
+    diff_info: &DiffInfo,
+    msg_info: &MessageInfo,
+) -> CommitClasses {
+    CommitClasses(do_classify_commit(metadata, diff_info, msg_info))
 }
 
 fn do_classify_commit(
@@ -298,50 +308,37 @@ fn do_classify_commit(
     classes
 }
 
-fn classify_commit(
-    metadata: &CommitMetadata,
-    diff_info: &DiffInfo,
-    msg_info: &MessageInfo,
-) -> CommitClasses {
-    CommitClasses(do_classify_commit(metadata, diff_info, msg_info))
-}
+lazy_static! {
+    static ref META_KEYS: HashSet<&'static str> = {
+        let mut keys = HashSet::new();
 
-pub fn parse_commit<'repo>(
-    commit: &'repo Commit<'repo>,
-    repo: &'repo Repository,
-) -> Result<CommitInfo<'repo>, Error> {
-    let msg_info = commit.message().map(MessageInfo::new).unwrap_or_default();
+        keys.insert("acked-by");
+        keys.insert("analyzed-by");
+        keys.insert("approved-by");
+        keys.insert("assisted-by");
+        keys.insert("based-on");
+        keys.insert("bisected-by");
+        keys.insert("caught-by");
+        keys.insert("cc");
+        keys.insert("checked-by");
+        keys.insert("co-developed-by");
+        keys.insert("fixed-by");
+        keys.insert("fixes");
+        keys.insert("found-by");
+        keys.insert("investigated-by");
+        keys.insert("link");
+        keys.insert("rebased-by");
+        keys.insert("reported-by");
+        keys.insert("reviewed-by");
+        keys.insert("sent-by");
+        keys.insert("signed-off-by");
+        keys.insert("sponsored-by");
+        keys.insert("submitted-by");
+        keys.insert("suggested-by");
+        keys.insert("tested-by");
+        keys.insert("triaged-by");
+        keys.insert("written-by");
 
-    let metadata = CommitMetadata {
-        id: commit.id().to_string(),
-        author: commit.author().name().unwrap().to_string(),
-        parents: commit.parent_count(),
+        keys
     };
-
-    if metadata.parents() >= 2 {
-        return Ok(CommitInfo {
-            metadata,
-            diff_info: None,
-            msg_info,
-            classes: CommitClasses(EnumSet::from(CommitClass::MergeCommit)),
-        });
-    }
-
-    let parent = commit.parents().next();
-
-    let tree = commit.tree()?;
-    let parent_tree = parent.as_ref().map(|p| p.tree()).transpose()?;
-
-    let diff = repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)?;
-    let diff_stats = diff.stats()?;
-    let diff_info = DiffInfo::new(&diff_stats);
-
-    let classes = classify_commit(&metadata, &diff_info, &msg_info);
-
-    Ok(CommitInfo {
-        metadata,
-        diff_info: Some(diff_info),
-        msg_info,
-        classes,
-    })
 }

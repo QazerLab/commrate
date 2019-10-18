@@ -3,11 +3,13 @@ extern crate lazy_static;
 
 mod commit;
 mod config;
+mod git;
 mod platform;
 mod scoring;
 
-use commit::{parse_commit, CommitInfo};
+use commit::CommitInfo;
 use config::read_config;
+use git::parse_commit;
 use platform::platform_init;
 use scoring::{
     rule::{
