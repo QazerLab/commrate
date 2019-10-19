@@ -3,6 +3,7 @@ extern crate lazy_static;
 
 mod commit;
 mod config;
+mod filter;
 mod git;
 mod platform;
 mod scoring;

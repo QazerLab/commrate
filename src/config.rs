@@ -1,4 +1,4 @@
-use crate::commit::CommitMetadata;
+use crate::filter::{AuthorCommitFilter, CommitFilter, CommitFilters, MergeCommitFilter};
 
 use clap::{App, Arg, ArgMatches};
 
@@ -24,50 +24,6 @@ impl AppConfig {
 
     pub fn start_commit(&self) -> &str {
         &self.start_commit
-    }
-}
-
-pub trait CommitFilter {
-    fn accept(&self, metadata: &CommitMetadata) -> bool;
-}
-
-pub struct AuthorCommitFilter {
-    author: String,
-}
-
-impl AuthorCommitFilter {
-    pub fn new(author: &str) -> AuthorCommitFilter {
-        AuthorCommitFilter {
-            author: author.to_owned(),
-        }
-    }
-}
-
-impl CommitFilter for AuthorCommitFilter {
-    fn accept(&self, metadata: &CommitMetadata) -> bool {
-        self.author == metadata.author()
-    }
-}
-
-pub struct MergeCommitFilter;
-
-impl CommitFilter for MergeCommitFilter {
-    fn accept(&self, metadata: &CommitMetadata) -> bool {
-        metadata.parents() <= 1
-    }
-}
-
-pub struct CommitFilters(Vec<Box<dyn CommitFilter>>);
-
-impl CommitFilters {
-    pub fn accept(&self, metadata: &CommitMetadata) -> bool {
-        for filter in &self.0 {
-            if !filter.accept(metadata) {
-                return false;
-            }
-        }
-
-        true
     }
 }
 
@@ -144,7 +100,7 @@ fn create_filters(matches: &ArgMatches) -> CommitFilters {
         commit_filters.push(Box::new(filter));
     }
 
-    CommitFilters(commit_filters)
+    CommitFilters::new(commit_filters)
 }
 
 fn read_commits_number(matches: &ArgMatches) -> Option<usize> {
