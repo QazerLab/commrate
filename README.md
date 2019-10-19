@@ -91,6 +91,5 @@ The following improvements are expected to be done before the first stable versi
     * make `--explain` provide hints for typical mistakes (e.g.: "hint: move part of long subject into the body");
 
 * misc:
-    * decouple current code from `libgit2` (specifically, remove `commit` field from `CommitInfo` struct for testability of all dependent code);
     * after previous item, cover the parsing/scoring with tests;
     * finally, add the manpage.
