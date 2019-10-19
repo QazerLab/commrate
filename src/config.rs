@@ -1,21 +1,38 @@
+use crate::commit::CommitMetadata;
+
 use clap::{App, Arg, ArgMatches};
-use git2::Commit;
+
+pub struct AppConfig {
+    commit_filters: CommitFilters,
+    start_commit: String,
+    max_commits: Option<usize>,
+    show_score: bool,
+}
+
+impl AppConfig {
+    pub fn filters(&self) -> &CommitFilters {
+        &self.commit_filters
+    }
+
+    pub fn max_commits(&self) -> Option<usize> {
+        self.max_commits
+    }
+
+    pub fn show_score(&self) -> bool {
+        self.show_score
+    }
+
+    pub fn start_commit(&self) -> &str {
+        &self.start_commit
+    }
+}
 
 pub trait CommitFilter {
-    fn accept(&self, commit: &Commit) -> bool;
+    fn accept(&self, metadata: &CommitMetadata) -> bool;
 }
 
 pub struct AuthorCommitFilter {
     author: String,
-}
-
-pub struct MergeCommitFilter;
-
-pub struct AppConfig {
-    commit_filters: Vec<Box<dyn CommitFilter>>,
-    start_commit: String,
-    max_commits: Option<u32>,
-    show_score: bool,
 }
 
 impl AuthorCommitFilter {
@@ -27,35 +44,30 @@ impl AuthorCommitFilter {
 }
 
 impl CommitFilter for AuthorCommitFilter {
-    fn accept(&self, commit: &Commit) -> bool {
-        match commit.author().name() {
-            Some(name) => self.author == name,
-            None => true,
-        }
+    fn accept(&self, metadata: &CommitMetadata) -> bool {
+        self.author == metadata.author()
     }
 }
+
+pub struct MergeCommitFilter;
 
 impl CommitFilter for MergeCommitFilter {
-    fn accept(&self, commit: &Commit) -> bool {
-        commit.parent_count() <= 1
+    fn accept(&self, metadata: &CommitMetadata) -> bool {
+        metadata.parents() <= 1
     }
 }
 
-impl AppConfig {
-    pub fn filters(&self) -> &Vec<Box<dyn CommitFilter>> {
-        &self.commit_filters
-    }
+pub struct CommitFilters(Vec<Box<dyn CommitFilter>>);
 
-    pub fn max_commits(&self) -> Option<u32> {
-        self.max_commits
-    }
+impl CommitFilters {
+    pub fn accept(&self, metadata: &CommitMetadata) -> bool {
+        for filter in &self.0 {
+            if !filter.accept(metadata) {
+                return false;
+            }
+        }
 
-    pub fn show_score(&self) -> bool {
-        self.show_score
-    }
-
-    pub fn start_commit(&self) -> &str {
-        &self.start_commit
+        true
     }
 }
 
@@ -104,7 +116,7 @@ fn init_clap_app() -> App<'static, 'static> {
                 .long("number")
                 .value_name("NUMBER")
                 .validator(|arg| {
-                    if let Ok(_) = arg.parse::<u32>() {
+                    if let Ok(_) = arg.parse::<usize>() {
                         return Ok(());
                     }
 
@@ -120,7 +132,7 @@ fn init_clap_app() -> App<'static, 'static> {
         )
 }
 
-fn create_filters(matches: &ArgMatches) -> Vec<Box<dyn CommitFilter>> {
+fn create_filters(matches: &ArgMatches) -> CommitFilters {
     let mut commit_filters: Vec<Box<dyn CommitFilter>> = Vec::new();
     if let Some(author) = matches.value_of("author") {
         let filter = AuthorCommitFilter::new(author);
@@ -132,10 +144,10 @@ fn create_filters(matches: &ArgMatches) -> Vec<Box<dyn CommitFilter>> {
         commit_filters.push(Box::new(filter));
     }
 
-    commit_filters
+    CommitFilters(commit_filters)
 }
 
-fn read_commits_number(matches: &ArgMatches) -> Option<u32> {
+fn read_commits_number(matches: &ArgMatches) -> Option<usize> {
     match matches.value_of("number") {
         Some(arg) => Some(arg.parse().unwrap()),
         None => None,

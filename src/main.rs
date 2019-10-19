@@ -9,7 +9,7 @@ mod scoring;
 
 use commit::CommitInfo;
 use config::read_config;
-use git::parse_commit;
+use git::GitRepository;
 use platform::platform_init;
 use scoring::{
     rule::{
@@ -21,20 +21,14 @@ use scoring::{
 };
 
 use colored::Colorize;
-use git2::{Error, Repository, Revwalk};
-use std::process::exit;
 
 fn main() {
     platform_init();
 
     let config = read_config();
-    let filters = config.filters();
-
     let scorer = init_scorer();
 
-    // TODO: push Git stuff down behind the abstraction level.
-    let repo = load_repo(".");
-    let revwalk = init_revwalk(&repo, config.start_commit());
+    let repo = GitRepository::open(".");
 
     let printer = Printer {
         show_score: config.show_score(),
@@ -42,29 +36,17 @@ fn main() {
 
     printer.print_header();
 
-    let max_commits = config.max_commits().unwrap_or(std::u32::MAX);
-    let mut commit_num = 0;
+    let filters = config.filters();
+    let max_commits = config.max_commits().unwrap_or(std::usize::MAX);
 
-    'commits: for commit_id in revwalk {
-        if commit_num == max_commits {
-            break;
-        }
-
-        let id = git_expect(commit_id);
-        let commit = git_expect(repo.find_commit(id));
-
-        for filter in filters {
-            if !filter.accept(&commit) {
-                continue 'commits;
-            }
-        }
-
-        let commit_info = git_expect(parse_commit(&commit, &repo));
-        let score = scorer.score(&commit_info);
-        printer.print_commit(&commit_info, &score);
-
-        commit_num += 1;
-    }
+    repo.traverse(config.start_commit())
+        .filter(|item| filters.accept(item.metadata()))
+        .take(max_commits)
+        .map(|item| item.parse())
+        .for_each(|info| {
+            let score = scorer.score(&info);
+            printer.print_commit(&info, &score);
+        });
 }
 
 fn init_scorer() -> Scorer {
@@ -76,28 +58,6 @@ fn init_scorer() -> Scorer {
         .with_rule(Box::new(BodyWrappingRule), 0.25)
         .with_rule(Box::new(MetadataLinesRule), 0.05)
         .build()
-}
-
-fn load_repo(location: &str) -> Repository {
-    git_expect(Repository::discover(location))
-}
-
-fn init_revwalk<'repo>(repo: &'repo Repository, start: &str) -> Revwalk<'repo> {
-    let mut revwalk = git_expect(repo.revwalk());
-    let rev = git_expect(repo.revparse_single(start));
-    git_expect(revwalk.push(rev.id()));
-
-    revwalk
-}
-
-fn git_expect<T>(wrapped: Result<T, Error>) -> T {
-    match wrapped {
-        Ok(value) => value,
-        Err(err) => {
-            eprintln!("{}: {}", "error".red(), err.message());
-            exit(1);
-        }
-    }
 }
 
 struct Printer {

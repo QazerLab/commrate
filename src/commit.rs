@@ -4,14 +4,14 @@ use std::fmt::{Display, Formatter};
 
 /// A parsed and classified commit with all the data
 /// required for scoring.
-pub struct CommitInfo<'repo> {
+pub struct CommitInfo {
     metadata: CommitMetadata,
     diff_info: Option<DiffInfo>,
-    msg_info: MessageInfo<'repo>,
+    msg_info: MessageInfo,
     classes: CommitClasses,
 }
 
-impl<'repo> CommitInfo<'repo> {
+impl CommitInfo {
     pub fn new(metadata: CommitMetadata, diff_info: DiffInfo, msg_info: MessageInfo) -> CommitInfo {
         let classes = classify_commit(&metadata, &diff_info, &msg_info);
 
@@ -114,8 +114,8 @@ impl DiffInfo {
 /// `MessageInfo` contains the metrics obtained from
 /// the commit message for scoring.
 #[derive(Default, Debug)]
-pub struct MessageInfo<'repo> {
-    subject: Option<&'repo str>,
+pub struct MessageInfo {
+    subject: Option<String>,
     break_after_subject: bool,
     body_len: usize,
     body_lines: usize,
@@ -123,9 +123,9 @@ pub struct MessageInfo<'repo> {
     metadata_lines: usize,
 }
 
-impl<'repo> MessageInfo<'repo> {
+impl MessageInfo {
     pub fn new(raw_message: &str) -> MessageInfo {
-        let mut subject: Option<&str> = None;
+        let mut subject: Option<String> = None;
         let mut break_after_subject = false;
         let mut body_len = 0;
         let mut body_lines = 0;
@@ -137,7 +137,13 @@ impl<'repo> MessageInfo<'repo> {
         // This means, that the subject is always line 0.
         for (line_num, line) in raw_message.lines().enumerate() {
             if line_num == 0 {
-                subject = Some(line);
+                // XXX: we need an owned string here for being able to
+                // conventently pass the MessageInfo out of intermediate
+                // iterator items.
+                //
+                // TODO: try to find the way to use a reference without
+                // giving up convenient iterators over commits.
+                subject = Some(line.to_string());
                 continue;
             }
 
@@ -172,7 +178,7 @@ impl<'repo> MessageInfo<'repo> {
     }
 
     pub fn subject(&self) -> Option<&str> {
-        self.subject
+        self.subject.as_ref().map(|ref s| s.as_str())
     }
 
     pub fn break_after_subject(&self) -> bool {
