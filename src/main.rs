@@ -6,22 +6,20 @@ mod config;
 mod filter;
 mod git;
 mod platform;
+mod printer;
 mod scoring;
 
-use commit::CommitInfo;
 use config::read_config;
 use git::GitRepository;
 use platform::platform_init;
+use printer::Printer;
 use scoring::{
     rule::{
         BodyLenRule, BodyPresenceRule, BodyWrappingRule, MetadataLinesRule, SubjectBodyBreakRule,
         SubjectRule,
     },
-    score::CommitScore,
     scorer::{Scorer, ScorerBuilder},
 };
-
-use colored::Colorize;
 
 fn main() {
     platform_init();
@@ -30,10 +28,7 @@ fn main() {
     let scorer = init_scorer();
 
     let repo = GitRepository::open(".");
-
-    let printer = Printer {
-        show_score: config.show_score(),
-    };
+    let printer = Printer::new(config.show_score());
 
     printer.print_header();
 
@@ -59,32 +54,4 @@ fn init_scorer() -> Scorer {
         .with_rule(Box::new(BodyWrappingRule), 0.25)
         .with_rule(Box::new(MetadataLinesRule), 0.05)
         .build()
-}
-
-struct Printer {
-    show_score: bool,
-}
-
-impl Printer {
-    pub fn print_header(&self) {
-        let score_title = if self.show_score { "SCORE" } else { "GRADE" };
-
-        println!(
-            "{:7} {:5} {:19} {}",
-            "COMMIT", score_title, "AUTHOR", "SUBJECT"
-        );
-    }
-
-    fn print_commit(&self, commit_info: &CommitInfo, score: &CommitScore) {
-        let metadata = commit_info.metadata();
-        let msg_info = commit_info.msg_info();
-
-        println!(
-            "{:7.7} {:<5} {:19.19} {}",
-            metadata.id().yellow(),
-            score.to_string(self.show_score),
-            metadata.author(),
-            msg_info.subject().unwrap_or("")
-        );
-    }
 }
