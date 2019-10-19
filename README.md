@@ -91,5 +91,5 @@ The following improvements are expected to be done before the first stable versi
     * make `--explain` provide hints for typical mistakes (e.g.: "hint: move part of long subject into the body");
 
 * misc:
-    * after previous item, cover the parsing/scoring with tests;
+    * cover the parsing/scoring with tests;
     * finally, add the manpage.
