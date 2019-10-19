@@ -61,7 +61,7 @@ pub struct GitRepositoryItem<'repo> {
     commit: Commit<'repo>,
 }
 
-impl<'repo> GitRepositoryItem<'repo> {
+impl GitRepositoryItem<'_> {
     pub fn metadata(&self) -> &CommitMetadata {
         &self.metadata
     }
