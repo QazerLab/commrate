@@ -96,16 +96,12 @@ fn create_filters(matches: &ArgMatches) -> CommitFilters {
     }
 
     if matches.occurrences_of("merges") == 0 {
-        let filter = MergeCommitFilter;
-        commit_filters.push(Box::new(filter));
+        commit_filters.push(Box::new(MergeCommitFilter));
     }
 
     CommitFilters::new(commit_filters)
 }
 
 fn read_commits_number(matches: &ArgMatches) -> Option<usize> {
-    match matches.value_of("number") {
-        Some(arg) => Some(arg.parse().unwrap()),
-        None => None,
-    }
+    matches.value_of("number").map(|arg| arg.parse().unwrap())
 }
