@@ -14,13 +14,13 @@ pub enum CommitScore {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub enum ScoreGrade {
-    A,
-    B,
-    C,
-    D,
     F,
+    D,
+    C,
+    B,
+    A,
 }
 
 impl CommitScore {
@@ -35,5 +35,25 @@ impl CommitScore {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn grades_ordered_from_f_to_a() {
+        let f = ScoreGrade::F;
+        let d = ScoreGrade::D;
+        let c = ScoreGrade::C;
+        let b = ScoreGrade::B;
+        let a = ScoreGrade::A;
+
+        // The rest is guaranteed by PartialOrd's transitivity.
+        assert!(d > f);
+        assert!(c > d);
+        assert!(b > c);
+        assert!(a > b);
     }
 }
