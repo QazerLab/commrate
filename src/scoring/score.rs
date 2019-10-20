@@ -56,4 +56,32 @@ mod tests {
         assert!(b > c);
         assert!(a > b);
     }
+
+    #[test]
+    fn ignored_score_is_rendered_as_dash() {
+        let score = CommitScore::Ignored;
+
+        assert!(score.to_string(true) == "-");
+        assert!(score.to_string(false) == "-");
+    }
+
+    #[test]
+    fn score_is_rendered_as_grade() {
+        let score = CommitScore::Scored {
+            score: 42,
+            grade: ScoreGrade::C,
+        };
+
+        assert!(score.to_string(false) == "C");
+    }
+
+    #[test]
+    fn score_is_rendered_as_number() {
+        let score = CommitScore::Scored {
+            score: 42,
+            grade: ScoreGrade::C,
+        };
+
+        assert!(score.to_string(true) == "42");
+    }
 }
