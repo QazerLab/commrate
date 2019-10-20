@@ -43,7 +43,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn grades_ordered_from_f_to_a() {
+    fn grades_are_ordered_from_f_to_a() {
         let f = ScoreGrade::F;
         let d = ScoreGrade::D;
         let c = ScoreGrade::C;
