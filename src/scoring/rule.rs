@@ -12,7 +12,7 @@ use enumset::EnumSet;
 /// * what is the real scale of the score.
 ///
 /// Both of these items are addressed at the higher levels.
-pub trait ScoringRule {
+pub trait Rule {
     /// Check the commit against this rule and return the result
     /// between 0 and 1 depending on the commit quality.
     fn score(&self, commit: &CommitInfo) -> f32;
@@ -30,7 +30,7 @@ pub trait ScoringRule {
 /// limitations are imposed - only length is scored.
 pub struct SubjectRule;
 
-impl ScoringRule for SubjectRule {
+impl Rule for SubjectRule {
     fn score(&self, commit: &CommitInfo) -> f32 {
         let classes = commit.classes().as_set();
 
@@ -80,7 +80,7 @@ impl ScoringRule for SubjectRule {
 /// Special commits classes are not penalized for body absence.
 pub struct BodyPresenceRule;
 
-impl ScoringRule for BodyPresenceRule {
+impl Rule for BodyPresenceRule {
     fn score(&self, commit: &CommitInfo) -> f32 {
         if commit.msg_info().body_len() > 0 || commit_is_special(commit) {
             1.0
@@ -101,7 +101,7 @@ impl ScoringRule for BodyPresenceRule {
 /// without the body at all, and this is not a bug.
 pub struct SubjectBodyBreakRule;
 
-impl ScoringRule for SubjectBodyBreakRule {
+impl Rule for SubjectBodyBreakRule {
     fn score(&self, commit: &CommitInfo) -> f32 {
         let msg_info = commit.msg_info();
 
@@ -130,7 +130,7 @@ impl ScoringRule for SubjectBodyBreakRule {
 /// cases, which should not be penalized for short/absent body.
 pub struct BodyLenRule;
 
-impl ScoringRule for BodyLenRule {
+impl Rule for BodyLenRule {
     fn score(&self, commit: &CommitInfo) -> f32 {
         if commit_is_special(commit) {
             return 1.0;
@@ -184,7 +184,7 @@ impl ScoringRule for BodyLenRule {
 /// reach the highest grade.
 pub struct BodyWrappingRule;
 
-impl ScoringRule for BodyWrappingRule {
+impl Rule for BodyWrappingRule {
     fn score(&self, commit: &CommitInfo) -> f32 {
         let msg_info = commit.msg_info();
         let body_lines = msg_info.body_lines();
@@ -212,7 +212,7 @@ impl ScoringRule for BodyWrappingRule {
 /// is close to the boudary between different grades.
 pub struct MetadataLinesRule;
 
-impl ScoringRule for MetadataLinesRule {
+impl Rule for MetadataLinesRule {
     fn score(&self, commit: &CommitInfo) -> f32 {
         match commit.msg_info().metadata_lines() {
             0 => 0.0,

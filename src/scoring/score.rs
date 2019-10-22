@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub enum CommitScore {
+pub enum Score {
     Ignored,
 
     // XXX: this attribute is a workaround for compiler bug:
@@ -10,12 +10,12 @@ pub enum CommitScore {
     #[allow(dead_code)]
     Scored {
         score: u8,
-        grade: ScoreGrade,
+        grade: Grade,
     },
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
-pub enum ScoreGrade {
+pub enum Grade {
     F,
     D,
     C,
@@ -23,7 +23,7 @@ pub enum ScoreGrade {
     A,
 }
 
-impl CommitScore {
+impl Score {
     pub fn to_string(&self, use_score: bool) -> String {
         match self {
             Self::Ignored => "-".to_string(),
@@ -44,11 +44,11 @@ mod tests {
 
     #[test]
     fn grades_are_ordered_from_f_to_a() {
-        let f = ScoreGrade::F;
-        let d = ScoreGrade::D;
-        let c = ScoreGrade::C;
-        let b = ScoreGrade::B;
-        let a = ScoreGrade::A;
+        let f = Grade::F;
+        let d = Grade::D;
+        let c = Grade::C;
+        let b = Grade::B;
+        let a = Grade::A;
 
         // The rest is guaranteed by PartialOrd's transitivity.
         assert!(d > f);
@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn ignored_score_is_rendered_as_dash() {
-        let score = CommitScore::Ignored;
+        let score = Score::Ignored;
 
         assert!(score.to_string(true) == "-");
         assert!(score.to_string(false) == "-");
@@ -67,9 +67,9 @@ mod tests {
 
     #[test]
     fn score_is_rendered_as_grade() {
-        let score = CommitScore::Scored {
+        let score = Score::Scored {
             score: 42,
-            grade: ScoreGrade::C,
+            grade: Grade::C,
         };
 
         assert!(score.to_string(false) == "C");
@@ -77,9 +77,9 @@ mod tests {
 
     #[test]
     fn score_is_rendered_as_number() {
-        let score = CommitScore::Scored {
+        let score = Score::Scored {
             score: 42,
-            grade: ScoreGrade::C,
+            grade: Grade::C,
         };
 
         assert!(score.to_string(true) == "42");

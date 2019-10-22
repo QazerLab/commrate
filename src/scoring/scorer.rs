@@ -1,7 +1,7 @@
 use crate::commit::{CommitClass, CommitInfo};
 use crate::scoring::{
-    rule::ScoringRule,
-    score::{CommitScore, ScoreGrade},
+    rule::Rule,
+    score::{Score, Grade},
 };
 
 pub struct Scorer {
@@ -13,7 +13,7 @@ pub struct ScorerBuilder {
 }
 
 struct ScorerItem {
-    rule: Box<dyn ScoringRule>,
+    rule: Box<dyn Rule>,
     weight: f32,
 }
 
@@ -22,7 +22,7 @@ impl ScorerBuilder {
         ScorerBuilder { rules: Vec::new() }
     }
 
-    pub fn with_rule(mut self, rule: Box<dyn ScoringRule>, weight: f32) -> ScorerBuilder {
+    pub fn with_rule(mut self, rule: Box<dyn Rule>, weight: f32) -> ScorerBuilder {
         self.rules.push(ScorerItem { rule, weight });
         self
     }
@@ -33,9 +33,9 @@ impl ScorerBuilder {
 }
 
 impl Scorer {
-    pub fn score(&self, commit: &CommitInfo) -> CommitScore {
+    pub fn score(&self, commit: &CommitInfo) -> Score {
         if commit.classes().as_set().contains(CommitClass::MergeCommit) {
-            return CommitScore::Ignored;
+            return Score::Ignored;
         }
 
         let mut score_accum = 0.0;
@@ -51,13 +51,13 @@ impl Scorer {
         };
 
         let grade = match score {
-            0..=19 => ScoreGrade::F,
-            20..=39 => ScoreGrade::D,
-            40..=59 => ScoreGrade::C,
-            60..=79 => ScoreGrade::B,
-            _ => ScoreGrade::A,
+            0..=19 => Grade::F,
+            20..=39 => Grade::D,
+            40..=59 => Grade::C,
+            60..=79 => Grade::B,
+            _ => Grade::A,
         };
 
-        CommitScore::Scored { score, grade }
+        Score::Scored { score, grade }
     }
 }

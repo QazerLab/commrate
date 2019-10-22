@@ -1,5 +1,5 @@
 use crate::commit::CommitInfo;
-use crate::scoring::score::{CommitScore, ScoreGrade};
+use crate::scoring::score::{Score, Grade};
 
 use colored::{Color, ColoredString, Colorize};
 
@@ -21,7 +21,7 @@ impl Printer {
         );
     }
 
-    pub fn print_commit(&self, commit_info: &CommitInfo, score: &CommitScore) {
+    pub fn print_commit(&self, commit_info: &CommitInfo, score: &Score) {
         let metadata = commit_info.metadata();
         let msg_info = commit_info.msg_info();
         let score_colored = self.colorize_score(score);
@@ -35,17 +35,17 @@ impl Printer {
         );
     }
 
-    fn colorize_score(&self, score: &CommitScore) -> ColoredString {
+    fn colorize_score(&self, score: &Score) -> ColoredString {
         let score_text = score.to_string(self.show_score);
 
         let score_color = match score {
-            CommitScore::Ignored => Color::White,
-            CommitScore::Scored { score: _, grade } => match grade {
-                ScoreGrade::A => Color::BrightGreen,
-                ScoreGrade::B => Color::BrightWhite,
-                ScoreGrade::C => Color::BrightYellow,
-                ScoreGrade::D => Color::BrightRed,
-                ScoreGrade::F => Color::Red,
+            Score::Ignored => Color::White,
+            Score::Scored { score: _, grade } => match grade {
+                Grade::A => Color::BrightGreen,
+                Grade::B => Color::BrightWhite,
+                Grade::C => Color::BrightYellow,
+                Grade::D => Color::BrightRed,
+                Grade::F => Color::Red,
             },
         };
 
