@@ -33,15 +33,20 @@ fn main() {
     printer.print_header();
 
     let pre_filters = config.pre_filters();
+    let post_filters = config.post_filters();
     let max_commits = config.max_commits().unwrap_or(std::usize::MAX);
 
     repo.traverse(config.start_commit())
         .filter(|item| pre_filters.accept(item.metadata()))
         .take(max_commits)
         .map(|item| item.parse())
-        .for_each(|info| {
-            let score = scorer.score(&info);
-            printer.print_commit(&info, &score);
+        .map(|info| scorer.score(info))
+        .filter(|scored| post_filters.accept(&scored))
+        .for_each(|scored| {
+            let commit = scored.commit();
+            let score = scored.score();
+
+            printer.print_commit(commit, score);
         });
 }
 

@@ -40,7 +40,13 @@ impl ScorerBuilder {
 }
 
 impl Scorer {
-    pub fn score(&self, commit: &CommitInfo) -> Score {
+    pub fn score(&self, commit: CommitInfo) -> ScoredCommit {
+        let score = self.score_internal(&commit);
+
+        ScoredCommit { commit, score }
+    }
+
+    fn score_internal(&self, commit: &CommitInfo) -> Score {
         if commit.classes().as_set().contains(CommitClass::MergeCommit) {
             return Score::Ignored;
         }
@@ -66,5 +72,20 @@ impl Scorer {
         };
 
         Score::Scored { score, grade }
+    }
+}
+
+pub struct ScoredCommit {
+    commit: CommitInfo,
+    score: Score,
+}
+
+impl ScoredCommit {
+    pub fn commit(&self) -> &CommitInfo {
+        &self.commit
+    }
+
+    pub fn score(&self) -> &Score {
+        &self.score
     }
 }

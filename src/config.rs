@@ -1,9 +1,12 @@
-use crate::filter::{AuthorPreFilter, PreFilter, PreFilters, MergePreFilter};
+use crate::filter::{
+    AuthorPreFilter, MergePreFilter, PostFilter, PostFilters, PreFilter, PreFilters,
+};
 
 use clap::{App, Arg, ArgMatches};
 
 pub struct AppConfig {
     pre_filters: PreFilters,
+    post_filters: PostFilters,
     start_commit: String,
     max_commits: Option<usize>,
     show_score: bool,
@@ -12,6 +15,10 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn pre_filters(&self) -> &PreFilters {
         &self.pre_filters
+    }
+
+    pub fn post_filters(&self) -> &PostFilters {
+        &self.post_filters
     }
 
     pub fn max_commits(&self) -> Option<usize> {
@@ -31,12 +38,14 @@ pub fn read_config() -> AppConfig {
     let app = init_clap_app();
     let matches = app.get_matches();
     let pre_filters = create_pre_filters(&matches);
+    let post_filters = create_post_filters(&matches);
     let max_commits = read_commits_number(&matches);
     let start_commit = matches.value_of("commit").unwrap_or("HEAD").to_string();
     let show_score = matches.occurrences_of("score") > 0;
 
     AppConfig {
         pre_filters,
+        post_filters,
         start_commit,
         max_commits,
         show_score,
@@ -100,6 +109,14 @@ fn create_pre_filters(matches: &ArgMatches) -> PreFilters {
     }
 
     PreFilters::new(commit_filters)
+}
+
+fn create_post_filters(matches: &ArgMatches) -> PostFilters {
+    let mut commit_filters: Vec<Box<dyn PostFilter>> = Vec::new();
+
+    // TODO: add score-based filter.
+
+    PostFilters::new(commit_filters)
 }
 
 fn read_commits_number(matches: &ArgMatches) -> Option<usize> {

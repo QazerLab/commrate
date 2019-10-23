@@ -1,4 +1,5 @@
-use crate::commit::CommitMetadata;
+use crate::commit::{CommitMetadata};
+use crate::scoring::scorer::ScoredCommit;
 
 /// A chain of commit filters for discarding unneeded commits
 /// as early as it is possible.
@@ -51,4 +52,29 @@ impl PreFilter for MergePreFilter {
     fn accept(&self, metadata: &CommitMetadata) -> bool {
         metadata.parents() <= 1
     }
+}
+
+/// A chain of commit filters for discarding unneeded commits
+/// after they are parsed and scored.
+pub struct PostFilters(Vec<Box<dyn PostFilter>>);
+
+impl PostFilters {
+    pub fn new(filters: Vec<Box<dyn PostFilter>>) -> PostFilters {
+        PostFilters(filters)
+    }
+
+    pub fn accept(&self, commit: &ScoredCommit) -> bool {
+        for filter in &self.0 {
+            if !filter.accept(commit) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+/// A single commit post-filter.
+pub trait PostFilter {
+    fn accept(&self, commit: &ScoredCommit) -> bool;
 }
