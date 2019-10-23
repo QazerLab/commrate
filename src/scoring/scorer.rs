@@ -1,7 +1,7 @@
 use crate::commit::{CommitClass, CommitInfo};
 use crate::scoring::{
     rule::Rule,
-    score::{Score, Grade},
+    score::{Grade, Score},
 };
 
 pub struct Scorer {
@@ -22,8 +22,15 @@ impl ScorerBuilder {
         ScorerBuilder { rules: Vec::new() }
     }
 
-    pub fn with_rule(mut self, rule: Box<dyn Rule>, weight: f32) -> ScorerBuilder {
-        self.rules.push(ScorerItem { rule, weight });
+    pub fn with_rule<R>(mut self, rule: R, weight: f32) -> ScorerBuilder
+    where
+        R: Rule + 'static,
+    {
+        self.rules.push(ScorerItem {
+            rule: Box::new(rule),
+            weight,
+        });
+
         self
     }
 

@@ -47,11 +47,11 @@ fn main() {
 
 fn init_scorer() -> Scorer {
     ScorerBuilder::new()
-        .with_rule(Box::new(SubjectRule), 0.3)
-        .with_rule(Box::new(BodyPresenceRule), 0.1)
-        .with_rule(Box::new(SubjectBodyBreakRule), 0.1)
-        .with_rule(Box::new(BodyLenRule), 0.25)
-        .with_rule(Box::new(BodyWrappingRule), 0.25)
-        .with_rule(Box::new(MetadataLinesRule), 0.05)
+        .with_rule(SubjectRule, 0.3)
+        .with_rule(BodyPresenceRule, 0.1)
+        .with_rule(SubjectBodyBreakRule, 0.1)
+        .with_rule(BodyLenRule, 0.25)
+        .with_rule(BodyWrappingRule, 0.25)
+        .with_rule(MetadataLinesRule, 0.05)
         .build()
 }
