@@ -2,11 +2,11 @@ use crate::commit::CommitMetadata;
 
 /// A chain of commit filters for discarding unneeded commits
 /// as early as it is possible.
-pub struct CommitFilters(Vec<Box<dyn CommitFilter>>);
+pub struct PreFilters(Vec<Box<dyn PreFilter>>);
 
-impl CommitFilters {
-    pub fn new(filters: Vec<Box<dyn CommitFilter>>) -> CommitFilters {
-        CommitFilters(filters)
+impl PreFilters {
+    pub fn new(filters: Vec<Box<dyn PreFilter>>) -> PreFilters {
+        PreFilters(filters)
     }
 
     pub fn accept(&self, metadata: &CommitMetadata) -> bool {
@@ -21,33 +21,33 @@ impl CommitFilters {
 }
 
 /// A single commit filter.
-pub trait CommitFilter {
+pub trait PreFilter {
     fn accept(&self, metadata: &CommitMetadata) -> bool;
 }
 
 /// A filter which accepts only commits with specific author.
-pub struct AuthorCommitFilter {
+pub struct AuthorPreFilter {
     author: String,
 }
 
-impl AuthorCommitFilter {
-    pub fn new(author: &str) -> AuthorCommitFilter {
-        AuthorCommitFilter {
+impl AuthorPreFilter {
+    pub fn new(author: &str) -> AuthorPreFilter {
+        AuthorPreFilter {
             author: author.to_owned(),
         }
     }
 }
 
-impl CommitFilter for AuthorCommitFilter {
+impl PreFilter for AuthorPreFilter {
     fn accept(&self, metadata: &CommitMetadata) -> bool {
         self.author == metadata.author()
     }
 }
 
 /// A filter which accepts only non-merge commits.
-pub struct MergeCommitFilter;
+pub struct MergePreFilter;
 
-impl CommitFilter for MergeCommitFilter {
+impl PreFilter for MergePreFilter {
     fn accept(&self, metadata: &CommitMetadata) -> bool {
         metadata.parents() <= 1
     }

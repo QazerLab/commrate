@@ -1,17 +1,17 @@
-use crate::filter::{AuthorCommitFilter, CommitFilter, CommitFilters, MergeCommitFilter};
+use crate::filter::{AuthorPreFilter, PreFilter, PreFilters, MergePreFilter};
 
 use clap::{App, Arg, ArgMatches};
 
 pub struct AppConfig {
-    commit_filters: CommitFilters,
+    pre_filters: PreFilters,
     start_commit: String,
     max_commits: Option<usize>,
     show_score: bool,
 }
 
 impl AppConfig {
-    pub fn filters(&self) -> &CommitFilters {
-        &self.commit_filters
+    pub fn pre_filters(&self) -> &PreFilters {
+        &self.pre_filters
     }
 
     pub fn max_commits(&self) -> Option<usize> {
@@ -30,13 +30,13 @@ impl AppConfig {
 pub fn read_config() -> AppConfig {
     let app = init_clap_app();
     let matches = app.get_matches();
-    let commit_filters = create_filters(&matches);
+    let pre_filters = create_pre_filters(&matches);
     let max_commits = read_commits_number(&matches);
     let start_commit = matches.value_of("commit").unwrap_or("HEAD").to_string();
     let show_score = matches.occurrences_of("score") > 0;
 
     AppConfig {
-        commit_filters,
+        pre_filters,
         start_commit,
         max_commits,
         show_score,
@@ -88,18 +88,18 @@ fn init_clap_app() -> App<'static, 'static> {
         )
 }
 
-fn create_filters(matches: &ArgMatches) -> CommitFilters {
-    let mut commit_filters: Vec<Box<dyn CommitFilter>> = Vec::new();
+fn create_pre_filters(matches: &ArgMatches) -> PreFilters {
+    let mut commit_filters: Vec<Box<dyn PreFilter>> = Vec::new();
     if let Some(author) = matches.value_of("author") {
-        let filter = AuthorCommitFilter::new(author);
+        let filter = AuthorPreFilter::new(author);
         commit_filters.push(Box::new(filter));
     }
 
     if matches.occurrences_of("merges") == 0 {
-        commit_filters.push(Box::new(MergeCommitFilter));
+        commit_filters.push(Box::new(MergePreFilter));
     }
 
-    CommitFilters::new(commit_filters)
+    PreFilters::new(commit_filters)
 }
 
 fn read_commits_number(matches: &ArgMatches) -> Option<usize> {

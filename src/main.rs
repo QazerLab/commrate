@@ -32,11 +32,11 @@ fn main() {
 
     printer.print_header();
 
-    let filters = config.filters();
+    let pre_filters = config.pre_filters();
     let max_commits = config.max_commits().unwrap_or(std::usize::MAX);
 
     repo.traverse(config.start_commit())
-        .filter(|item| filters.accept(item.metadata()))
+        .filter(|item| pre_filters.accept(item.metadata()))
         .take(max_commits)
         .map(|item| item.parse())
         .for_each(|info| {
