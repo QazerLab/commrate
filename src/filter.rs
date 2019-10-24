@@ -1,5 +1,10 @@
-use crate::commit::{CommitMetadata};
-use crate::scoring::scorer::ScoredCommit;
+use crate::{
+    commit::CommitMetadata,
+    scoring::{
+        score::{GradeSpec, Score},
+        scorer::ScoredCommit,
+    },
+};
 
 /// A chain of commit filters for discarding unneeded commits
 /// as early as it is possible.
@@ -77,4 +82,23 @@ impl PostFilters {
 /// A single commit post-filter.
 pub trait PostFilter {
     fn accept(&self, commit: &ScoredCommit) -> bool;
+}
+
+pub struct GradePostFilter {
+    spec: GradeSpec,
+}
+
+impl PostFilter for GradePostFilter {
+    fn accept(&self, commit: &ScoredCommit) -> bool {
+        match commit.score() {
+            Score::Ignored => true,
+            Score::Scored { score: _, grade } => self.spec.matches(*grade),
+        }
+    }
+}
+
+impl GradePostFilter {
+    pub fn new(spec: GradeSpec) -> GradePostFilter {
+        GradePostFilter { spec }
+    }
 }

@@ -83,7 +83,7 @@ The following improvements are expected to be done before the first stable versi
 * cli:
     * `--pass-grade`, `-p` option for specifying the minimum "pass" grade. Any commit scored below this grade should cause failure with non-zero exit code. Optionally, add `--pass-score`;
     * `--explain`, `-e` option for showing the commit classes and the results of specific rules;
-    * `--explain-grades`, `-g` option for specifying the grades for which the `--explain` should print the output (default: `ABCDF`). Implies `--explain`;
+    * `--explain-grades`, `-d` option for specifying the grades for which the `--explain` should print the output (default: `F+`). Implies `--explain`;
     * automatically invoke `less -FR` for output paging (`--no-pager`, `-r` option for overriding this behavior);
 
 * scoring:

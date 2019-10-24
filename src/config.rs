@@ -1,5 +1,9 @@
-use crate::filter::{
-    AuthorPreFilter, MergePreFilter, PostFilter, PostFilters, PreFilter, PreFilters,
+use crate::{
+    filter::{
+        AuthorPreFilter, GradePostFilter, MergePreFilter, PostFilter, PostFilters, PreFilter,
+        PreFilters,
+    },
+    scoring::score::GradeSpec,
 };
 
 use clap::{App, Arg, ArgMatches};
@@ -70,6 +74,18 @@ fn init_clap_app() -> App<'static, 'static> {
                 .help("Filters by commit author"),
         )
         .arg(
+            Arg::with_name("grades")
+                .short("g")
+                .long("grades")
+                .value_name("GRADE_SPEC")
+                .validator(|arg| {
+                    arg.parse::<GradeSpec>()
+                        .map_err(|s| s.to_string())
+                        .map(|_| ())
+                })
+                .help("Filters by commit grade"),
+        )
+        .arg(
             Arg::with_name("merges")
                 .short("m")
                 .long("merges")
@@ -99,6 +115,7 @@ fn init_clap_app() -> App<'static, 'static> {
 
 fn create_pre_filters(matches: &ArgMatches) -> PreFilters {
     let mut commit_filters: Vec<Box<dyn PreFilter>> = Vec::new();
+
     if let Some(author) = matches.value_of("author") {
         let filter = AuthorPreFilter::new(author);
         commit_filters.push(Box::new(filter));
@@ -114,7 +131,11 @@ fn create_pre_filters(matches: &ArgMatches) -> PreFilters {
 fn create_post_filters(matches: &ArgMatches) -> PostFilters {
     let mut commit_filters: Vec<Box<dyn PostFilter>> = Vec::new();
 
-    // TODO: add score-based filter.
+    if let Some(grades) = matches.value_of("grades") {
+        let spec = grades.parse::<GradeSpec>().unwrap();
+        let filter = GradePostFilter::new(spec);
+        commit_filters.push(Box::new(filter));
+    }
 
     PostFilters::new(commit_filters)
 }
