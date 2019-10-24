@@ -106,17 +106,12 @@ mod tests {
 
     #[test]
     fn grades_are_ordered_from_f_to_a() {
-        let f = Grade::F;
-        let d = Grade::D;
-        let c = Grade::C;
-        let b = Grade::B;
-        let a = Grade::A;
+        assert!(D > F);
+        assert!(C > D);
+        assert!(B > C);
+        assert!(A > B);
 
         // The rest is guaranteed by PartialOrd's transitivity.
-        assert!(d > f);
-        assert!(c > d);
-        assert!(b > c);
-        assert!(a > b);
     }
 
     #[test]
@@ -131,7 +126,7 @@ mod tests {
     fn score_is_rendered_as_grade() {
         let score = Score::Scored {
             score: 42,
-            grade: Grade::C,
+            grade: C,
         };
 
         assert!(score.to_string(false) == "C");
@@ -141,7 +136,7 @@ mod tests {
     fn score_is_rendered_as_number() {
         let score = Score::Scored {
             score: 42,
-            grade: Grade::C,
+            grade: C,
         };
 
         assert!(score.to_string(true) == "42");
