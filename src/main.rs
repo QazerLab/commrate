@@ -38,16 +38,11 @@ fn main() {
 
     repo.traverse(config.start_commit())
         .filter(|item| pre_filters.accept(item.metadata()))
-        .take(max_commits)
         .map(|item| item.parse())
         .map(|info| scorer.score(info))
         .filter(|scored| post_filters.accept(&scored))
-        .for_each(|scored| {
-            let commit = scored.commit();
-            let score = scored.score();
-
-            printer.print_commit(commit, score);
-        });
+        .take(max_commits)
+        .for_each(|scored| printer.print_commit(&scored));
 }
 
 fn init_scorer() -> Scorer {
