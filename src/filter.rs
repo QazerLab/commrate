@@ -84,6 +84,7 @@ pub trait PostFilter {
     fn accept(&self, commit: &ScoredCommit) -> bool;
 }
 
+/// A post-filter for discarding commits based on their score.
 pub struct GradePostFilter {
     spec: GradeSpec,
 }
