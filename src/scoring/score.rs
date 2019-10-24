@@ -118,8 +118,8 @@ mod tests {
     fn ignored_score_is_rendered_as_dash() {
         let score = Score::Ignored;
 
-        assert!(score.to_string(true) == "-");
-        assert!(score.to_string(false) == "-");
+        assert_eq!(score.to_string(true), "-");
+        assert_eq!(score.to_string(false), "-");
     }
 
     #[test]
@@ -129,7 +129,7 @@ mod tests {
             grade: C,
         };
 
-        assert!(score.to_string(false) == "C");
+        assert_eq!(score.to_string(false), "C");
     }
 
     #[test]
@@ -139,7 +139,7 @@ mod tests {
             grade: C,
         };
 
-        assert!(score.to_string(true) == "42");
+        assert_eq!(score.to_string(true), "42");
     }
 
     #[test]
@@ -167,8 +167,8 @@ mod tests {
 
                 let expected = GradeSpec { grade, rel };
 
-                assert!(GradeSpec::from_str(&input).unwrap() == expected);
-                assert!(GradeSpec::from_str(&input_lower).unwrap() == expected);
+                assert_eq!(GradeSpec::from_str(&input).unwrap(), expected);
+                assert_eq!(GradeSpec::from_str(&input_lower).unwrap(), expected);
             }
         }
     }
