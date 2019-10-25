@@ -3,7 +3,7 @@ use crate::{
         AuthorPreFilter, GradePostFilter, MergePreFilter, PostFilter, PostFilters, PreFilter,
         PreFilters,
     },
-    scoring::score::GradeSpec,
+    scoring::grade::GradeSpec,
 };
 
 use clap::{App, Arg, ArgMatches};

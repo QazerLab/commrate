@@ -1,7 +1,8 @@
 use crate::commit::{CommitClass, CommitInfo};
 use crate::scoring::{
+    grade::Grade,
     rule::Rule,
-    score::{Grade, Score},
+    score::Score,
 };
 
 pub struct Scorer {

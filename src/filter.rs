@@ -1,9 +1,6 @@
 use crate::{
     commit::CommitMetadata,
-    scoring::{
-        score::{GradeSpec, Score},
-        scorer::ScoredCommit,
-    },
+    scoring::{grade::GradeSpec, score::Score, scorer::ScoredCommit},
 };
 
 /// A chain of commit filters for discarding unneeded commits
