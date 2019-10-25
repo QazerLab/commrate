@@ -237,7 +237,7 @@ lazy_static! {
         let mut special_set = EnumSet::new();
 
         special_set.insert(CommitClass::ShortCommit);
-        special_set.insert(CommitClass::RenameCommit);
+        special_set.insert(CommitClass::RefactorCommit);
         special_set.insert(CommitClass::InitialCommit);
 
         special_set

@@ -205,6 +205,12 @@ impl MessageInfo {
 /// Maximum diff size (lines total) for short commits.
 pub const SHORT_COMMIT_LENGTH: usize = 25;
 
+/// For refactoring commits, we allow a slight difference between
+/// insertions and deletions (5% of total diff) to ensure
+/// that move-related things like fixing imports and so on
+/// do not subvert the correct classification of these commits.
+pub const REFACTOR_COMMIT_ALLOWED_DIFF: f32 = 0.05;
+
 /// Commits of different nature require special treatment
 /// disregarging the fact that their actual properties like
 /// diff length or message length are the same: having some
@@ -231,16 +237,18 @@ pub enum CommitClass {
     ShortCommit,
 
     /// Commits whose sole purpose is renaming some file
-    /// or piece of code (e.g. function) usually do not require
+    /// or piece of code (e.g. function) or moving this
+    /// piece to another file usually do not require
     /// additional explanations and may be described with a
     /// single subject line, e.g.
     ///
     /// "Rename Foo::bar() to Foo::baz()"
     /// "Rename src/module to src/another_module"
+    /// "Move redhat::Openshift to ibm::Openshift"
     ///
     /// Such commits could be pretty long though, so they
     /// require special treatment.
-    RenameCommit,
+    RefactorCommit,
 }
 
 /// A newtype wrapper for implementing Display.
@@ -254,7 +262,7 @@ impl Display for CommitClasses {
             buf.push(match class {
                 CommitClass::MergeCommit => 'M',
                 CommitClass::InitialCommit => 'I',
-                CommitClass::RenameCommit => 'R',
+                CommitClass::RefactorCommit => 'R',
                 CommitClass::ShortCommit => 'S',
             });
         }
@@ -303,10 +311,16 @@ fn do_classify_commit(
     // False positives are extremely rare, so let's pretend they
     // are absent. At the end of the day, no one will die due to
     // one commit of thousands being *overscored*.
-    if diff_info.deletions() == diff_info.insertions() {
+    let allowed_diff = (diff_info.diff_total() as f32 * REFACTOR_COMMIT_ALLOWED_DIFF) as isize;
+    let actual_diff = (diff_info.deletions() as isize - diff_info.insertions() as isize).abs();
+    if actual_diff <= allowed_diff {
         if let Some(subject) = msg_info.subject() {
-            if subject.to_ascii_lowercase().contains("rename") {
-                classes.insert(CommitClass::RenameCommit);
+            let lower = subject.to_ascii_lowercase();
+
+            // TODO: replace this with regexp to allow some flexibility
+            // and also discard cases when these strings are not separate words.
+            if lower.contains("rename") || lower.contains("move") {
+                classes.insert(CommitClass::RefactorCommit);
             }
         }
     }
