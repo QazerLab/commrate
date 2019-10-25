@@ -76,6 +76,10 @@ impl FromStr for GradeSpec {
             None => Relation::Eq,
         };
 
+        if let Some(_) = chars.next() {
+            return Err("grade specification should not contain extra characters");
+        }
+
         Ok(GradeSpec { grade, rel })
     }
 }
@@ -147,6 +151,7 @@ mod tests {
         assert!(GradeSpec::from_str("").is_err());
         assert!(GradeSpec::from_str("+").is_err());
         assert!(GradeSpec::from_str("-").is_err());
+        assert!(GradeSpec::from_str("C++").is_err());
         assert!(GradeSpec::from_str("Abyrvalg!").is_err());
     }
 
