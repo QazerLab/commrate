@@ -17,7 +17,6 @@ pub enum Score {
 }
 
 impl Score {
-
     // XXX: this attribute is a workaround for Clippy bug
     // causing false positives when to_string() accepts
     // more than one argument.
