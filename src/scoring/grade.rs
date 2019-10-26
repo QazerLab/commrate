@@ -45,7 +45,7 @@ impl FromStr for GradeSpec {
             None => Relation::Eq,
         };
 
-        if let Some(_) = chars.next() {
+        if chars.next().is_some() {
             return Err("grade specification should not contain extra characters");
         }
 

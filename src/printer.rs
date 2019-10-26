@@ -14,10 +14,7 @@ impl Printer {
     pub fn print_header(&self) {
         let score_title = if self.show_score { "SCORE" } else { "GRADE" };
 
-        println!(
-            "{:7} {:5} {:19} {}",
-            "COMMIT", score_title, "AUTHOR", "SUBJECT"
-        );
+        println!("{:7} {:5} {:19} SUBJECT", "COMMIT", score_title, "AUTHOR");
     }
 
     pub fn print_commit(&self, scored_commit: &ScoredCommit) {
@@ -41,7 +38,7 @@ impl Printer {
 
         let score_color = match score {
             Score::Ignored => Color::White,
-            Score::Scored { score: _, grade } => match grade {
+            Score::Scored { grade, .. } => match grade {
                 Grade::A => Color::BrightGreen,
                 Grade::B => Color::BrightWhite,
                 Grade::C => Color::BrightYellow,

@@ -7,6 +7,7 @@ use crate::{
 };
 
 use clap::{App, Arg, ArgMatches};
+use std::str::FromStr;
 
 pub struct AppConfig {
     pre_filters: PreFilters,
@@ -78,11 +79,7 @@ fn init_clap_app() -> App<'static, 'static> {
                 .short("g")
                 .long("grades")
                 .value_name("GRADE_SPEC")
-                .validator(|arg| {
-                    arg.parse::<GradeSpec>()
-                        .map_err(|s| s.to_string())
-                        .map(|_| ())
-                })
+                .validator(try_parse::<GradeSpec>)
                 .help("Filters by commit grade"),
         )
         .arg(
@@ -96,13 +93,7 @@ fn init_clap_app() -> App<'static, 'static> {
                 .short("n")
                 .long("number")
                 .value_name("NUMBER")
-                .validator(|arg| {
-                    if let Ok(_) = arg.parse::<usize>() {
-                        return Ok(());
-                    }
-
-                    Err("must be a non-negative number".to_string())
-                })
+                .validator(try_parse::<usize>)
                 .help("Maximum number of commits to show"),
         )
         .arg(
@@ -111,6 +102,24 @@ fn init_clap_app() -> App<'static, 'static> {
                 .long("score")
                 .help("Shows numeric scores instead of discrete grades"),
         )
+}
+
+/// A generic parseability validator for Clap arguments.
+///
+/// It is required for the following reasons:
+///
+/// * no matter what type of successfull parsing result is,
+///   Clap always expects just Ok(());
+/// * in case of error Clap expects Err(String), but different
+///   target types have different Err associate types in their
+///   FromStr implementations, so we need to do the conversion
+///   from T::Err to Err(String) in generic manner.
+fn try_parse<T>(arg: String) -> Result<(), String>
+where
+    T: FromStr,
+    T::Err: ToString,
+{
+    arg.parse::<T>().map_err(|s| s.to_string()).map(|_| ())
 }
 
 fn create_pre_filters(matches: &ArgMatches) -> PreFilters {

@@ -111,12 +111,10 @@ impl Rule for SubjectBodyBreakRule {
             } else {
                 0.0
             }
+        } else if commit_is_special(commit) {
+            1.0
         } else {
-            if commit_is_special(commit) {
-                1.0
-            } else {
-                0.0
-            }
+            0.0
         }
     }
 }
