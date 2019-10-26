@@ -1,6 +1,6 @@
 use crate::scoring::grade::Grade;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Score {
     Ignored,
 
@@ -17,7 +17,7 @@ pub enum Score {
 }
 
 impl Score {
-    pub fn to_string(&self, use_score: bool) -> String {
+    pub fn to_string(self, use_score: bool) -> String {
         match self {
             Self::Ignored => "-".to_string(),
             Self::Scored { score, grade } => {

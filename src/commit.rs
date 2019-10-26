@@ -46,8 +46,8 @@ impl CommitInfo {
         &self.msg_info
     }
 
-    pub fn classes(&self) -> &CommitClasses {
-        &self.classes
+    pub fn classes(&self) -> CommitClasses {
+        self.classes
     }
 }
 
@@ -252,6 +252,7 @@ pub enum CommitClass {
 }
 
 /// A newtype wrapper for implementing Display.
+#[derive(Clone, Copy, Debug)]
 pub struct CommitClasses(EnumSet<CommitClass>);
 
 impl Display for CommitClasses {
@@ -272,8 +273,8 @@ impl Display for CommitClasses {
 }
 
 impl CommitClasses {
-    pub fn as_set(&self) -> &EnumSet<CommitClass> {
-        &self.0
+    pub fn as_set(self) -> EnumSet<CommitClass> {
+        self.0
     }
 }
 

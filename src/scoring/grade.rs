@@ -10,7 +10,7 @@ pub enum Grade {
 }
 
 /// A spec for matching grade.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GradeSpec {
     grade: Grade,
     rel: Relation,
@@ -54,7 +54,7 @@ impl FromStr for GradeSpec {
 }
 
 impl GradeSpec {
-    pub fn matches(&self, grade: Grade) -> bool {
+    pub fn matches(self, grade: Grade) -> bool {
         match self.rel {
             Relation::Eq => grade == self.grade,
             Relation::Ge => grade >= self.grade,

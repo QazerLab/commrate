@@ -36,7 +36,7 @@ impl Printer {
         );
     }
 
-    fn colorize_score(&self, score: &Score) -> ColoredString {
+    fn colorize_score(&self, score: Score) -> ColoredString {
         let score_text = score.to_string(self.show_score);
 
         let score_color = match score {

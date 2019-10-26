@@ -86,7 +86,7 @@ impl ScoredCommit {
         &self.commit
     }
 
-    pub fn score(&self) -> &Score {
-        &self.score
+    pub fn score(&self) -> Score {
+        self.score
     }
 }

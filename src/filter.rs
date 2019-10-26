@@ -90,7 +90,7 @@ impl PostFilter for GradePostFilter {
     fn accept(&self, commit: &ScoredCommit) -> bool {
         match commit.score() {
             Score::Ignored => true,
-            Score::Scored { score: _, grade } => self.spec.matches(*grade),
+            Score::Scored { score: _, grade } => self.spec.matches(grade),
         }
     }
 }
