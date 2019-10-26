@@ -7,8 +7,8 @@ pub struct Printer {
 }
 
 impl Printer {
-    pub fn new(show_score: bool) -> Printer {
-        Printer { show_score }
+    pub fn new(show_score: bool) -> Self {
+        Self { show_score }
     }
 
     pub fn print_header(&self) {

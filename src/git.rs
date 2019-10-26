@@ -9,8 +9,8 @@ pub struct GitRepository {
 }
 
 impl GitRepository {
-    pub fn open(location: &str) -> GitRepository {
-        GitRepository {
+    pub fn open(location: &str) -> Self {
+        Self {
             repo: git_expect(Repository::discover(location)),
         }
     }

@@ -8,8 +8,8 @@ use crate::{
 pub struct PreFilters(Vec<Box<dyn PreFilter>>);
 
 impl PreFilters {
-    pub fn new(filters: Vec<Box<dyn PreFilter>>) -> PreFilters {
-        PreFilters(filters)
+    pub fn new(filters: Vec<Box<dyn PreFilter>>) -> Self {
+        Self(filters)
     }
 
     pub fn accept(&self, metadata: &CommitMetadata) -> bool {
@@ -34,8 +34,8 @@ pub struct AuthorPreFilter {
 }
 
 impl AuthorPreFilter {
-    pub fn new(author: &str) -> AuthorPreFilter {
-        AuthorPreFilter {
+    pub fn new(author: &str) -> Self {
+        Self {
             author: author.to_owned(),
         }
     }
@@ -61,8 +61,8 @@ impl PreFilter for MergePreFilter {
 pub struct PostFilters(Vec<Box<dyn PostFilter>>);
 
 impl PostFilters {
-    pub fn new(filters: Vec<Box<dyn PostFilter>>) -> PostFilters {
-        PostFilters(filters)
+    pub fn new(filters: Vec<Box<dyn PostFilter>>) -> Self {
+        Self(filters)
     }
 
     pub fn accept(&self, commit: &ScoredCommit) -> bool {
