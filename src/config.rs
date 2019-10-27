@@ -1,28 +1,26 @@
 use crate::{
-    filter::{
-        AuthorPreFilter, GradePostFilter, MergePreFilter, PostFilter, PostFilters, PreFilter,
-        PreFilters,
-    },
-    scoring::grade::GradeSpec,
+    commit::CommitMetadata,
+    filter::{AuthorPreFilter, Filter, FilterChain, GradePostFilter, MergePreFilter},
+    scoring::{grade::GradeSpec, scorer::ScoredCommit},
 };
 
 use clap::{App, Arg, ArgMatches};
 use std::str::FromStr;
 
 pub struct AppConfig {
-    pre_filters: PreFilters,
-    post_filters: PostFilters,
+    pre_filters: FilterChain<CommitMetadata>,
+    post_filters: FilterChain<ScoredCommit>,
     start_commit: String,
     max_commits: Option<usize>,
     show_score: bool,
 }
 
 impl AppConfig {
-    pub fn pre_filters(&self) -> &PreFilters {
+    pub fn pre_filters(&self) -> &FilterChain<CommitMetadata> {
         &self.pre_filters
     }
 
-    pub fn post_filters(&self) -> &PostFilters {
+    pub fn post_filters(&self) -> &FilterChain<ScoredCommit> {
         &self.post_filters
     }
 
@@ -122,31 +120,31 @@ where
     arg.parse::<T>().map_err(|s| s.to_string()).map(|_| ())
 }
 
-fn create_pre_filters(matches: &ArgMatches) -> PreFilters {
-    let mut commit_filters: Vec<Box<dyn PreFilter>> = Vec::new();
+fn create_pre_filters(matches: &ArgMatches) -> FilterChain<CommitMetadata> {
+    let mut filters: Vec<Box<dyn Filter<Descriptor = CommitMetadata>>> = Vec::new();
 
     if let Some(author) = matches.value_of("author") {
         let filter = AuthorPreFilter::new(author);
-        commit_filters.push(Box::new(filter));
+        filters.push(Box::new(filter));
     }
 
     if matches.occurrences_of("merges") == 0 {
-        commit_filters.push(Box::new(MergePreFilter));
+        filters.push(Box::new(MergePreFilter));
     }
 
-    PreFilters::new(commit_filters)
+    FilterChain::new(filters)
 }
 
-fn create_post_filters(matches: &ArgMatches) -> PostFilters {
-    let mut commit_filters: Vec<Box<dyn PostFilter>> = Vec::new();
+fn create_post_filters(matches: &ArgMatches) -> FilterChain<ScoredCommit> {
+    let mut filters: Vec<Box<dyn Filter<Descriptor = ScoredCommit>>> = Vec::new();
 
     if let Some(grades) = matches.value_of("grades") {
         let spec = grades.parse::<GradeSpec>().unwrap();
         let filter = GradePostFilter::new(spec);
-        commit_filters.push(Box::new(filter));
+        filters.push(Box::new(filter));
     }
 
-    PostFilters::new(commit_filters)
+    FilterChain::new(filters)
 }
 
 fn read_commits_number(matches: &ArgMatches) -> Option<usize> {
