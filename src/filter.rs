@@ -97,7 +97,7 @@ impl Filter for GradePostFilter {
 }
 
 impl GradePostFilter {
-    pub fn new(spec: GradeSpec) -> GradePostFilter {
-        GradePostFilter { spec }
+    pub fn new(spec: GradeSpec) -> Self {
+        Self { spec }
     }
 }
