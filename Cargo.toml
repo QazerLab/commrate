@@ -8,6 +8,6 @@ edition = "2018"
 clap = "2.33.0"
 colored = "1.8.0"
 enumset = "0.4.2"
-git2 = "0.10.1"
+git2 = { version = "0.10.1", default-features = false }
 lazy_static = "1.4.0"
 libc = "0.2.62"
