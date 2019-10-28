@@ -1,7 +1,7 @@
 use crate::{
     commit::CommitMetadata,
     filter::{AuthorPreFilter, Filter, FilterChain, GradePostFilter, MergePreFilter},
-    scoring::{grade::GradeSpec, scorer::ScoredCommit},
+    scoring::{GradeSpec, ScoredCommit},
 };
 
 use clap::{App, Arg, ArgMatches};

@@ -1,6 +1,6 @@
 use crate::{
     commit::CommitMetadata,
-    scoring::{grade::GradeSpec, score::Score, scorer::ScoredCommit},
+    scoring::{GradeSpec, Score, ScoredCommit},
 };
 
 /// A chain of filters which can be applied to some commit at some stage

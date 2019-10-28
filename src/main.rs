@@ -14,11 +14,8 @@ use git::GitRepository;
 use platform::platform_init;
 use printer::Printer;
 use scoring::{
-    rule::{
-        BodyLenRule, BodyPresenceRule, BodyWrappingRule, MetadataLinesRule, SubjectBodyBreakRule,
-        SubjectRule,
-    },
-    scorer::{Scorer, ScorerBuilder},
+    BodyLenRule, BodyPresenceRule, BodyWrappingRule, MetadataLinesRule, Scorer, ScorerBuilder,
+    SubjectBodyBreakRule, SubjectRule,
 };
 
 fn main() {

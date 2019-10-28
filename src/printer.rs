@@ -1,4 +1,4 @@
-use crate::scoring::{grade::Grade, score::Score, scorer::ScoredCommit};
+use crate::scoring::{Grade, Score, ScoredCommit};
 
 use colored::{Color, ColoredString, Colorize};
 
