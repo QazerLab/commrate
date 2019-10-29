@@ -379,6 +379,69 @@ mod tests {
     }
 
     #[test]
+    fn initial_commit_is_classified_when_no_parents() {
+        let meta = CommitMetadata {
+            id: COMMIT_ID.to_string(),
+            author: "Leeroy Jenkins".to_string(),
+            parents: 0,
+        };
+
+        let diff = DiffInfo::new(0, 0);
+        let msg_info = msg_info_from_subject("Initial commit");
+
+        let classes = do_classify_commit(&meta, &diff, &msg_info);
+
+        assert!(classes.contains(CommitClass::InitialCommit));
+    }
+
+    #[test]
+    fn initial_commit_is_not_classified_when_parents_exist() {
+        let meta = CommitMetadata {
+            id: COMMIT_ID.to_string(),
+            author: "Leeroy Jenkins".to_string(),
+            parents: 1,
+        };
+
+        let meta2 = CommitMetadata {
+            id: COMMIT_ID.to_string(),
+            author: "Leeroy Jenkins".to_string(),
+            parents: 42,
+        };
+
+        let diff = DiffInfo::new(0, 0);
+        let diff2 = DiffInfo::new(42, 666);
+        let msg_info = msg_info_from_subject("Initial commit");
+
+        let classes = do_classify_commit(&meta, &diff, &msg_info);
+        let classes2 = do_classify_commit(&meta, &diff2, &msg_info);
+        let classes3 = do_classify_commit(&meta2, &diff, &msg_info);
+
+        assert!(!classes.contains(CommitClass::InitialCommit));
+        assert!(!classes2.contains(CommitClass::InitialCommit));
+        assert!(!classes3.contains(CommitClass::InitialCommit));
+    }
+
+    #[test]
+    fn short_commit_is_classified_for_single_line_diff() {
+        let diff = DiffInfo::new(1, 0);
+        let msg_info = msg_info_from_subject("Fix NPE in CustomMetricsController");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+
+        assert!(classes.contains(CommitClass::ShortCommit));
+    }
+
+    #[test]
+    fn short_commit_is_not_classified_for_huge_diff() {
+        let diff = DiffInfo::new(666, 42);
+        let msg_info = msg_info_from_subject("Fix NPE in CustomMetricsController");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+
+        assert!(!classes.contains(CommitClass::ShortCommit));
+    }
+
+    #[test]
     fn refactor_commit_is_classified_with_infinitive() {
         let diff = DiffInfo::new(42, 42);
         let msg_info = msg_info_from_subject("move Snowden to Russia");
