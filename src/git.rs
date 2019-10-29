@@ -108,5 +108,5 @@ fn parse_diff_stats(stats: &DiffStats) -> DiffInfo {
     let insertions = stats.insertions();
     let deletions = stats.deletions();
 
-    DiffInfo::new(insertions, deletions, insertions + deletions)
+    DiffInfo::new(insertions, deletions)
 }

@@ -1,4 +1,5 @@
 use enumset::{EnumSet, EnumSetType};
+use regex::Regex;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
@@ -92,11 +93,11 @@ pub struct DiffInfo {
 }
 
 impl DiffInfo {
-    pub fn new(insertions: usize, deletions: usize, diff_total: usize) -> DiffInfo {
+    pub fn new(insertions: usize, deletions: usize) -> DiffInfo {
         DiffInfo {
             insertions,
             deletions,
-            diff_total,
+            diff_total: insertions + deletions,
         }
     }
 
@@ -316,11 +317,8 @@ fn do_classify_commit(
     let actual_diff = (diff_info.deletions() as isize - diff_info.insertions() as isize).abs();
     if actual_diff <= allowed_diff {
         if let Some(subject) = msg_info.subject() {
-            let lower = subject.to_ascii_lowercase();
-
-            // TODO: replace this with regexp to allow some flexibility
-            // and also discard cases when these strings are not separate words.
-            if lower.contains("rename") || lower.contains("move") {
+            let regex = Regex::new(r#"(?i)(\bmoved?\b)|(\brenamed?\b)"#).unwrap();
+            if regex.is_match(subject) {
                 classes.insert(CommitClass::RefactorCommit);
             }
         }
@@ -362,4 +360,123 @@ lazy_static! {
 
         keys
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const COMMIT_ID: &str = "9335a4dc0e098830dec14fe3997c6a654695b935";
+
+    lazy_static! {
+        static ref ORDINARY_META: CommitMetadata = {
+            CommitMetadata {
+                id: COMMIT_ID.to_string(),
+                author: "Leeroy Jenkins".to_string(),
+                parents: 1,
+            }
+        };
+    }
+
+    #[test]
+    fn refactor_commit_is_classified_with_infinitive() {
+        let diff = DiffInfo::new(42, 42);
+        let msg_info = msg_info_from_subject("move Snowden to Russia");
+        let msg_info2 = msg_info_from_subject("rename C# to Java");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+
+        assert!(classes.contains(CommitClass::RefactorCommit));
+        assert!(classes2.contains(CommitClass::RefactorCommit));
+    }
+
+    #[test]
+    fn refactor_commit_is_classified_with_past() {
+        let diff = DiffInfo::new(42, 42);
+        let msg_info = msg_info_from_subject("moved Snowden to Russia");
+        let msg_info2 = msg_info_from_subject("renamed C# to Java");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+
+        assert!(classes.contains(CommitClass::RefactorCommit));
+        assert!(classes2.contains(CommitClass::RefactorCommit));
+    }
+
+    #[test]
+    fn refactor_commit_is_classified_with_mixed_case() {
+        let diff = DiffInfo::new(42, 42);
+        let msg_info = msg_info_from_subject("MoVe Snowden to Russia");
+        let msg_info2 = msg_info_from_subject("ReNaMe C# to Java");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+
+        assert!(classes.contains(CommitClass::RefactorCommit));
+        assert!(classes2.contains(CommitClass::RefactorCommit));
+    }
+
+    #[test]
+    fn refactor_commit_is_classified_with_keywords_in_middle() {
+        let diff = DiffInfo::new(42, 42);
+        let msg_info = msg_info_from_subject("I moved Snowden to Russia");
+        let msg_info2 = msg_info_from_subject("I renamed C# to Java");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+
+        assert!(classes.contains(CommitClass::RefactorCommit));
+        assert!(classes2.contains(CommitClass::RefactorCommit));
+    }
+
+    #[test]
+    fn refactor_commit_is_classified_with_small_ins_del_diff() {
+        let diff = DiffInfo::new(50, 52);
+        let msg_info = msg_info_from_subject("Move Snowden to Russia");
+        let msg_info2 = msg_info_from_subject("Rename C# to Java");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+
+        assert!(classes.contains(CommitClass::RefactorCommit));
+        assert!(classes2.contains(CommitClass::RefactorCommit));
+    }
+
+    #[test]
+    fn refactor_commit_is_not_classified_without_keywords() {
+        let diff = DiffInfo::new(42, 42);
+        let msg_info = msg_info_from_subject("Improve character movement rendering");
+        let msg_info2 = msg_info_from_subject("Just for lulz bro");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+
+        assert!(!classes.contains(CommitClass::RefactorCommit));
+        assert!(!classes2.contains(CommitClass::RefactorCommit));
+    }
+
+    #[test]
+    fn refactor_commit_is_not_classified_with_large_ins_del_diff() {
+        let diff = DiffInfo::new(10, 500);
+        let msg_info = msg_info_from_subject("Move Snowden to Russia");
+        let msg_info2 = msg_info_from_subject("Rename C# to Java");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+
+        assert!(!classes.contains(CommitClass::RefactorCommit));
+        assert!(!classes2.contains(CommitClass::RefactorCommit));
+    }
+
+    fn msg_info_from_subject(subject: &str) -> MessageInfo {
+        MessageInfo {
+            subject: Some(subject.to_string()),
+            break_after_subject: false,
+            body_len: 0,
+            body_lines: 0,
+            body_unwrapped_lines: 0,
+            metadata_lines: 0,
+        }
+    }
 }
