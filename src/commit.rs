@@ -379,6 +379,16 @@ mod tests {
     }
 
     #[test]
+    fn ordinary_commit_gets_no_special_classes() {
+        let diff = DiffInfo::new(53, 102);
+        let msg_info = msg_info_from_subject("Lorem ipsum dolor sit amet");
+
+        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+
+        assert!(classes.is_empty());
+    }
+
+    #[test]
     fn initial_commit_is_classified_when_no_parents() {
         let meta = CommitMetadata {
             id: COMMIT_ID.to_string(),
