@@ -54,9 +54,6 @@ impl CommitInfo {
 
 /// A commit metadata, which is easy to obtain from
 /// the repository without any heavy processing.
-///
-/// XXX: do we really need owned Strings here, or there
-/// is a way to decoupe from git2 Oid's pecularities?
 pub struct CommitMetadata {
     id: String,
     author: String,
@@ -138,12 +135,6 @@ impl MessageInfo {
         // This means, that the subject is always line 0.
         for (line_num, line) in raw_message.lines().enumerate() {
             if line_num == 0 {
-                // XXX: we need an owned string here for being able to
-                // conventently pass the MessageInfo out of intermediate
-                // iterator items.
-                //
-                // TODO: try to find the way to use a reference without
-                // giving up convenient iterators over commits.
                 subject = Some(line.to_string());
                 continue;
             }
@@ -377,6 +368,8 @@ mod tests {
             }
         };
     }
+
+    // TODO: test message info parsing and classes Display implementation.
 
     #[test]
     fn ordinary_commit_gets_no_special_classes() {
