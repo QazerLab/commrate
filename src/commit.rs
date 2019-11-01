@@ -369,7 +369,34 @@ mod tests {
         };
     }
 
-    // TODO: test message info parsing and classes Display implementation.
+    // TODO: test message info parsing.
+
+    #[test]
+    fn empty_classes_are_rendered_as_empty_string() {
+        let classes = CommitClasses(EnumSet::new());
+        let rendered = format!("{}", classes);
+
+        assert_eq!(rendered, "");
+    }
+
+    #[test]
+    fn full_classes_set_is_rendered_correctly() {
+        let mut classes_set = EnumSet::new();
+
+        classes_set.insert(CommitClass::ShortCommit);
+        classes_set.insert(CommitClass::MergeCommit);
+        classes_set.insert(CommitClass::RefactorCommit);
+        classes_set.insert(CommitClass::InitialCommit);
+
+        let classes = CommitClasses(classes_set);
+        let rendered = format!("{}", classes);
+
+        // XXX: here we rely on the fact that EnumSet uses the order in which
+        // variants are defined in enum. This behavior is consistent for
+        // specific Rust/EnumSet versions, but may occasionally break after
+        // updates, so keep in mind that this test is not perfect.
+        assert_eq!(rendered, "MISR");
+    }
 
     #[test]
     fn ordinary_commit_gets_no_special_classes() {
