@@ -15,7 +15,7 @@ impl GitRepository {
         }
     }
 
-    pub fn traverse(&self, start_commit: &str) -> GitTraversal {
+    pub fn traverse(&self, start_commit: &str) -> GitTraversal<'_> {
         let mut revwalk = git_expect(self.repo.revwalk());
         let rev = git_expect(self.repo.revparse_single(start_commit));
         git_expect(revwalk.push(rev.id()));

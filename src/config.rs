@@ -120,7 +120,7 @@ where
     arg.parse::<T>().map_err(|s| s.to_string()).map(|_| ())
 }
 
-fn create_pre_filters(matches: &ArgMatches) -> FilterChain<CommitMetadata> {
+fn create_pre_filters(matches: &ArgMatches<'_>) -> FilterChain<CommitMetadata> {
     let mut filters: Vec<Box<dyn Filter<Descriptor = CommitMetadata>>> = Vec::new();
 
     if let Some(author) = matches.value_of("author") {
@@ -135,7 +135,7 @@ fn create_pre_filters(matches: &ArgMatches) -> FilterChain<CommitMetadata> {
     FilterChain::new(filters)
 }
 
-fn create_post_filters(matches: &ArgMatches) -> FilterChain<ScoredCommit> {
+fn create_post_filters(matches: &ArgMatches<'_>) -> FilterChain<ScoredCommit> {
     let mut filters: Vec<Box<dyn Filter<Descriptor = ScoredCommit>>> = Vec::new();
 
     if let Some(grades) = matches.value_of("grades") {
@@ -147,6 +147,6 @@ fn create_post_filters(matches: &ArgMatches) -> FilterChain<ScoredCommit> {
     FilterChain::new(filters)
 }
 
-fn read_commits_number(matches: &ArgMatches) -> Option<usize> {
+fn read_commits_number(matches: &ArgMatches<'_>) -> Option<usize> {
     matches.value_of("number").map(|arg| arg.parse().unwrap())
 }
