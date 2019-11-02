@@ -79,12 +79,12 @@ impl Classes {
         metadata: &Metadata,
         diff_info: &DiffInfo,
         msg_info: &MessageInfo,
-    ) -> Classes {
-        Classes(classify(metadata, diff_info, msg_info))
+    ) -> Self {
+        Self(classify(metadata, diff_info, msg_info))
     }
 
-    pub fn from_set(classes: EnumSet<Class>) -> Classes {
-        Classes(classes)
+    pub fn from_set(classes: EnumSet<Class>) -> Self {
+        Self(classes)
     }
 
     pub fn as_set(self) -> EnumSet<Class> {
