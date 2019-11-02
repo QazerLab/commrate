@@ -1,7 +1,7 @@
-use crate::commit::{CommitInfo, CommitMetadata, DiffInfo, MessageInfo};
+use crate::commit::{Commit, Metadata, DiffInfo, MessageInfo};
 
 use colored::Colorize;
-use git2::{Commit, DiffStats, Error, Repository, Revwalk};
+use git2::{Commit as GitCommit, DiffStats, Error, Repository, Revwalk};
 use std::process::exit;
 
 pub struct GitRepository {
@@ -40,7 +40,7 @@ impl<'repo> Iterator for GitTraversal<'repo> {
             let id = git_expect(commit_id);
             let commit = git_expect(self.repo.find_commit(id));
 
-            let metadata = CommitMetadata::new(
+            let metadata = Metadata::new(
                 commit.id().to_string(),
                 commit.author().name().unwrap().to_string(),
                 commit.parent_count(),
@@ -57,16 +57,16 @@ impl<'repo> Iterator for GitTraversal<'repo> {
 
 pub struct GitRepositoryItem<'repo> {
     repo: &'repo Repository,
-    metadata: CommitMetadata,
-    commit: Commit<'repo>,
+    metadata: Metadata,
+    commit: GitCommit<'repo>,
 }
 
 impl GitRepositoryItem<'_> {
-    pub fn metadata(&self) -> &CommitMetadata {
+    pub fn metadata(&self) -> &Metadata {
         &self.metadata
     }
 
-    pub fn parse(self) -> CommitInfo {
+    pub fn parse(self) -> Commit {
         let msg_info = self
             .commit
             .message()
@@ -74,7 +74,7 @@ impl GitRepositoryItem<'_> {
             .unwrap_or_default();
 
         if self.metadata.parents() >= 2 {
-            return CommitInfo::new_from_merge(self.metadata, msg_info);
+            return Commit::new_from_merge(self.metadata, msg_info);
         }
 
         let parent = self.commit.parents().next();
@@ -90,7 +90,7 @@ impl GitRepositoryItem<'_> {
         let diff_stats = git_expect(diff.stats());
         let diff_info = parse_diff_stats(&diff_stats);
 
-        CommitInfo::new(self.metadata, diff_info, msg_info)
+        Commit::new(self.metadata, diff_info, msg_info)
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::commit::{CommitClass, CommitInfo};
+use crate::commit::{Class, Commit};
 
 use enumset::EnumSet;
 
@@ -15,7 +15,7 @@ use enumset::EnumSet;
 pub trait Rule {
     /// Check the commit against this rule and return the result
     /// between 0 and 1 depending on the commit quality.
-    fn score(&self, commit: &CommitInfo) -> f32;
+    fn score(&self, commit: &Commit) -> f32;
 }
 
 /// This rule checks the commit subject (the first message line),
@@ -31,12 +31,12 @@ pub trait Rule {
 pub struct SubjectRule;
 
 impl Rule for SubjectRule {
-    fn score(&self, commit: &CommitInfo) -> f32 {
+    fn score(&self, commit: &Commit) -> f32 {
         let classes = commit.classes().as_set();
 
         // Typical "Initial commit" gets penalized by ordinary rules,
         // let's forgive this short but traditional message.
-        if classes.contains(CommitClass::InitialCommit) {
+        if classes.contains(Class::Initial) {
             return 1.0;
         }
 
@@ -81,7 +81,7 @@ impl Rule for SubjectRule {
 pub struct BodyPresenceRule;
 
 impl Rule for BodyPresenceRule {
-    fn score(&self, commit: &CommitInfo) -> f32 {
+    fn score(&self, commit: &Commit) -> f32 {
         if commit.msg_info().body_len() > 0 || commit_is_special(commit) {
             1.0
         } else {
@@ -102,7 +102,7 @@ impl Rule for BodyPresenceRule {
 pub struct SubjectBodyBreakRule;
 
 impl Rule for SubjectBodyBreakRule {
-    fn score(&self, commit: &CommitInfo) -> f32 {
+    fn score(&self, commit: &Commit) -> f32 {
         let msg_info = commit.msg_info();
 
         if msg_info.body_len() > 0 {
@@ -129,7 +129,7 @@ impl Rule for SubjectBodyBreakRule {
 pub struct BodyLenRule;
 
 impl Rule for BodyLenRule {
-    fn score(&self, commit: &CommitInfo) -> f32 {
+    fn score(&self, commit: &Commit) -> f32 {
         if commit_is_special(commit) {
             return 1.0;
         }
@@ -183,7 +183,7 @@ impl Rule for BodyLenRule {
 pub struct BodyWrappingRule;
 
 impl Rule for BodyWrappingRule {
-    fn score(&self, commit: &CommitInfo) -> f32 {
+    fn score(&self, commit: &Commit) -> f32 {
         let msg_info = commit.msg_info();
         let body_lines = msg_info.body_lines();
 
@@ -211,7 +211,7 @@ impl Rule for BodyWrappingRule {
 pub struct MetadataLinesRule;
 
 impl Rule for MetadataLinesRule {
-    fn score(&self, commit: &CommitInfo) -> f32 {
+    fn score(&self, commit: &Commit) -> f32 {
         match commit.msg_info().metadata_lines() {
             0 => 0.0,
             1 => 0.6,
@@ -221,7 +221,7 @@ impl Rule for MetadataLinesRule {
     }
 }
 
-fn commit_is_special(commit: &CommitInfo) -> bool {
+fn commit_is_special(commit: &Commit) -> bool {
     let classes = commit.classes().as_set();
 
     !classes.intersection(*SPECIAL_CLASSES).is_empty()
@@ -231,12 +231,12 @@ fn commit_is_special(commit: &CommitInfo) -> bool {
 // Most rules use the same set of such special classes,
 // so let's predefine this set here.
 lazy_static! {
-    static ref SPECIAL_CLASSES: EnumSet<CommitClass> = {
+    static ref SPECIAL_CLASSES: EnumSet<Class> = {
         let mut special_set = EnumSet::new();
 
-        special_set.insert(CommitClass::ShortCommit);
-        special_set.insert(CommitClass::RefactorCommit);
-        special_set.insert(CommitClass::InitialCommit);
+        special_set.insert(Class::Short);
+        special_set.insert(Class::Refactor);
+        special_set.insert(Class::Initial);
 
         special_set
     };

@@ -1,24 +1,24 @@
 use enumset::EnumSet;
 
 use crate::commit::{
-    class::{CommitClass, CommitClasses},
+    class::{Class, Classes},
     diff::DiffInfo,
     message::MessageInfo,
-    metadata::CommitMetadata,
+    metadata::Metadata,
 };
 
 /// A parsed and classified commit with all the data
 /// required for scoring.
-pub struct CommitInfo {
-    metadata: CommitMetadata,
+pub struct Commit {
+    metadata: Metadata,
     diff_info: Option<DiffInfo>,
     msg_info: MessageInfo,
-    classes: CommitClasses,
+    classes: Classes,
 }
 
-impl CommitInfo {
-    pub fn new(metadata: CommitMetadata, diff_info: DiffInfo, msg_info: MessageInfo) -> Self {
-        let classes = CommitClasses::classify_commit(&metadata, &diff_info, &msg_info);
+impl Commit {
+    pub fn new(metadata: Metadata, diff_info: DiffInfo, msg_info: MessageInfo) -> Self {
+        let classes = Classes::classify_commit(&metadata, &diff_info, &msg_info);
 
         Self {
             metadata,
@@ -28,8 +28,8 @@ impl CommitInfo {
         }
     }
 
-    pub fn new_from_merge(metadata: CommitMetadata, msg_info: MessageInfo) -> Self {
-        let classes = CommitClasses::from_set(EnumSet::from(CommitClass::MergeCommit));
+    pub fn new_from_merge(metadata: Metadata, msg_info: MessageInfo) -> Self {
+        let classes = Classes::from_set(EnumSet::from(Class::Merge));
 
         Self {
             metadata,
@@ -39,7 +39,7 @@ impl CommitInfo {
         }
     }
 
-    pub fn metadata(&self) -> &CommitMetadata {
+    pub fn metadata(&self) -> &Metadata {
         &self.metadata
     }
 
@@ -51,7 +51,7 @@ impl CommitInfo {
         &self.msg_info
     }
 
-    pub fn classes(&self) -> CommitClasses {
+    pub fn classes(&self) -> Classes {
         self.classes
     }
 }

@@ -2,7 +2,7 @@ use enumset::{EnumSet, EnumSetType};
 use regex::Regex;
 use std::fmt::{Display, Formatter};
 
-use crate::commit::{diff::DiffInfo, message::MessageInfo, metadata::CommitMetadata};
+use crate::commit::{diff::DiffInfo, message::MessageInfo, metadata::Metadata};
 
 /// Maximum diff size (lines total) for short commits.
 pub const SHORT_COMMIT_LENGTH: usize = 25;
@@ -22,13 +22,13 @@ pub const REFACTOR_COMMIT_ALLOWED_DIFF: f32 = 0.05;
 /// Comments for each case of this enum explain, why specific
 /// semantics of specific commit makes it special.
 #[derive(EnumSetType, Debug)]
-pub enum CommitClass {
-    MergeCommit,
+pub enum Class {
+    Merge,
 
     /// Initial commits usually do not have anything else
     /// a subject "Initial commit" in the message, though
     /// they frequently have huge diff.
-    InitialCommit,
+    Initial,
 
     /// Short commits may contain some primitive change
     /// which does not require additional explanations:
@@ -36,7 +36,7 @@ pub enum CommitClass {
     ///
     /// No penalty for message body should be applied to
     /// such commits.
-    ShortCommit,
+    Short,
 
     /// Commits whose sole purpose is renaming some file
     /// or piece of code (e.g. function) or moving this
@@ -50,23 +50,23 @@ pub enum CommitClass {
     ///
     /// Such commits could be pretty long though, so they
     /// require special treatment.
-    RefactorCommit,
+    Refactor,
 }
 
 /// A newtype wrapper for implementing Display.
 #[derive(Clone, Copy, Debug)]
-pub struct CommitClasses(EnumSet<CommitClass>);
+pub struct Classes(EnumSet<Class>);
 
-impl Display for CommitClasses {
+impl Display for Classes {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let set_len = self.as_set().len();
         let mut buf = String::with_capacity(set_len);
         for class in self.0 {
             buf.push(match class {
-                CommitClass::MergeCommit => 'M',
-                CommitClass::InitialCommit => 'I',
-                CommitClass::RefactorCommit => 'R',
-                CommitClass::ShortCommit => 'S',
+                Class::Merge => 'M',
+                Class::Initial => 'I',
+                Class::Refactor => 'R',
+                Class::Short => 'S',
             });
         }
 
@@ -74,37 +74,33 @@ impl Display for CommitClasses {
     }
 }
 
-impl CommitClasses {
+impl Classes {
     pub fn classify_commit(
-        metadata: &CommitMetadata,
+        metadata: &Metadata,
         diff_info: &DiffInfo,
         msg_info: &MessageInfo,
-    ) -> CommitClasses {
-        CommitClasses(do_classify_commit(metadata, diff_info, msg_info))
+    ) -> Classes {
+        Classes(classify(metadata, diff_info, msg_info))
     }
 
-    pub fn from_set(classes: EnumSet<CommitClass>) -> CommitClasses {
-        CommitClasses(classes)
+    pub fn from_set(classes: EnumSet<Class>) -> Classes {
+        Classes(classes)
     }
 
-    pub fn as_set(self) -> EnumSet<CommitClass> {
+    pub fn as_set(self) -> EnumSet<Class> {
         self.0
     }
 }
 
-fn do_classify_commit(
-    metadata: &CommitMetadata,
-    diff_info: &DiffInfo,
-    msg_info: &MessageInfo,
-) -> EnumSet<CommitClass> {
+fn classify(metadata: &Metadata, diff_info: &DiffInfo, msg_info: &MessageInfo) -> EnumSet<Class> {
     let mut classes = EnumSet::new();
 
     if metadata.parents() == 0 {
-        classes.insert(CommitClass::InitialCommit);
+        classes.insert(Class::Initial);
     }
 
     if diff_info.diff_total() < SHORT_COMMIT_LENGTH {
-        classes.insert(CommitClass::ShortCommit);
+        classes.insert(Class::Short);
     }
 
     // XXX: detection of rename commits is a best-effort attempt
@@ -124,7 +120,7 @@ fn do_classify_commit(
         if let Some(subject) = msg_info.subject() {
             let regex = Regex::new(r#"(?i)(\bmoved?\b)|(\brenamed?\b)"#).unwrap();
             if regex.is_match(subject) {
-                classes.insert(CommitClass::RefactorCommit);
+                classes.insert(Class::Refactor);
             }
         }
     }
@@ -140,36 +136,36 @@ mod tests {
 
     lazy_static! {
         /// Ordinary commit metadata.
-        static ref ORDINARY_META: CommitMetadata = {
+        static ref ORDINARY_META: Metadata = {
             let id = COMMIT_ID.to_string();
             let author = "Leeroy Jenkins".to_string();
             let parents = 1;
 
-            CommitMetadata::new(id, author, parents)
+            Metadata::new(id, author, parents)
         };
 
         /// Initial commit metadata.
-        static ref INITIAL_META: CommitMetadata = {
+        static ref INITIAL_META: Metadata = {
             let id = COMMIT_ID.to_string();
             let author = "Leeroy Jenkins".to_string();
             let parents = 0;
 
-            CommitMetadata::new(id, author, parents)
+            Metadata::new(id, author, parents)
         };
 
         /// Merge commit metadata. Parents number may be huge.
-        static ref MERGE_META: CommitMetadata = {
+        static ref MERGE_META: Metadata = {
             let id = COMMIT_ID.to_string();
             let author = "Leeroy Jenkins".to_string();
             let parents = 42;
 
-            CommitMetadata::new(id, author, parents)
+            Metadata::new(id, author, parents)
         };
     }
 
     #[test]
     fn empty_classes_are_rendered_as_empty_string() {
-        let classes = CommitClasses(EnumSet::new());
+        let classes = Classes(EnumSet::new());
         let rendered = format!("{}", classes);
 
         assert_eq!(rendered, "");
@@ -179,12 +175,12 @@ mod tests {
     fn full_classes_set_is_rendered_correctly() {
         let mut classes_set = EnumSet::new();
 
-        classes_set.insert(CommitClass::ShortCommit);
-        classes_set.insert(CommitClass::MergeCommit);
-        classes_set.insert(CommitClass::RefactorCommit);
-        classes_set.insert(CommitClass::InitialCommit);
+        classes_set.insert(Class::Short);
+        classes_set.insert(Class::Merge);
+        classes_set.insert(Class::Refactor);
+        classes_set.insert(Class::Initial);
 
-        let classes = CommitClasses(classes_set);
+        let classes = Classes(classes_set);
         let rendered = format!("{}", classes);
 
         // XXX: here we rely on the fact that EnumSet uses the order in which
@@ -197,9 +193,9 @@ mod tests {
     #[test]
     fn ordinary_commit_gets_no_special_classes() {
         let diff = DiffInfo::new(53, 102);
-        let msg_info = msg_info_from_subject("Lorem ipsum dolor sit amet");
+        let msg_info = MessageInfo::new("Lorem ipsum dolor sit amet");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
 
         assert!(classes.is_empty());
     }
@@ -207,140 +203,136 @@ mod tests {
     #[test]
     fn initial_commit_is_classified_when_no_parents() {
         let diff = DiffInfo::new(0, 0);
-        let msg_info = msg_info_from_subject("Initial commit");
+        let msg_info = MessageInfo::new("Initial commit");
 
-        let classes = do_classify_commit(&INITIAL_META, &diff, &msg_info);
+        let classes = classify(&INITIAL_META, &diff, &msg_info);
 
-        assert!(classes.contains(CommitClass::InitialCommit));
+        assert!(classes.contains(Class::Initial));
     }
 
     #[test]
     fn initial_commit_is_not_classified_when_parents_exist() {
         let diff = DiffInfo::new(0, 0);
         let diff2 = DiffInfo::new(42, 666);
-        let msg_info = msg_info_from_subject("Initial commit");
+        let msg_info = MessageInfo::new("Initial commit");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
-        let classes2 = do_classify_commit(&ORDINARY_META, &diff2, &msg_info);
-        let classes3 = do_classify_commit(&MERGE_META, &diff, &msg_info);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = classify(&ORDINARY_META, &diff2, &msg_info);
+        let classes3 = classify(&MERGE_META, &diff, &msg_info);
 
-        assert!(!classes.contains(CommitClass::InitialCommit));
-        assert!(!classes2.contains(CommitClass::InitialCommit));
-        assert!(!classes3.contains(CommitClass::InitialCommit));
+        assert!(!classes.contains(Class::Initial));
+        assert!(!classes2.contains(Class::Initial));
+        assert!(!classes3.contains(Class::Initial));
     }
 
     #[test]
     fn short_commit_is_classified_for_single_line_diff() {
         let diff = DiffInfo::new(1, 0);
-        let msg_info = msg_info_from_subject("Fix NPE in CustomMetricsController");
+        let msg_info = MessageInfo::new("Fix NPE in CustomMetricsController");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
 
-        assert!(classes.contains(CommitClass::ShortCommit));
+        assert!(classes.contains(Class::Short));
     }
 
     #[test]
     fn short_commit_is_not_classified_for_huge_diff() {
         let diff = DiffInfo::new(666, 42);
-        let msg_info = msg_info_from_subject("Fix NPE in CustomMetricsController");
+        let msg_info = MessageInfo::new("Fix NPE in CustomMetricsController");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
 
-        assert!(!classes.contains(CommitClass::ShortCommit));
+        assert!(!classes.contains(Class::Short));
     }
 
     #[test]
     fn refactor_commit_is_classified_with_infinitive() {
         let diff = DiffInfo::new(42, 42);
-        let msg_info = msg_info_from_subject("move Snowden to Russia");
-        let msg_info2 = msg_info_from_subject("rename C# to Java");
+        let msg_info = MessageInfo::new("move Snowden to Russia");
+        let msg_info2 = MessageInfo::new("rename C# to Java");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
-        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = classify(&ORDINARY_META, &diff, &msg_info2);
 
-        assert!(classes.contains(CommitClass::RefactorCommit));
-        assert!(classes2.contains(CommitClass::RefactorCommit));
+        assert!(classes.contains(Class::Refactor));
+        assert!(classes2.contains(Class::Refactor));
     }
 
     #[test]
     fn refactor_commit_is_classified_with_past() {
         let diff = DiffInfo::new(42, 42);
-        let msg_info = msg_info_from_subject("moved Snowden to Russia");
-        let msg_info2 = msg_info_from_subject("renamed C# to Java");
+        let msg_info = MessageInfo::new("moved Snowden to Russia");
+        let msg_info2 = MessageInfo::new("renamed C# to Java");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
-        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = classify(&ORDINARY_META, &diff, &msg_info2);
 
-        assert!(classes.contains(CommitClass::RefactorCommit));
-        assert!(classes2.contains(CommitClass::RefactorCommit));
+        assert!(classes.contains(Class::Refactor));
+        assert!(classes2.contains(Class::Refactor));
     }
 
     #[test]
     fn refactor_commit_is_classified_with_mixed_case() {
         let diff = DiffInfo::new(42, 42);
-        let msg_info = msg_info_from_subject("MoVe Snowden to Russia");
-        let msg_info2 = msg_info_from_subject("ReNaMe C# to Java");
+        let msg_info = MessageInfo::new("MoVe Snowden to Russia");
+        let msg_info2 = MessageInfo::new("ReNaMe C# to Java");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
-        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = classify(&ORDINARY_META, &diff, &msg_info2);
 
-        assert!(classes.contains(CommitClass::RefactorCommit));
-        assert!(classes2.contains(CommitClass::RefactorCommit));
+        assert!(classes.contains(Class::Refactor));
+        assert!(classes2.contains(Class::Refactor));
     }
 
     #[test]
     fn refactor_commit_is_classified_with_keywords_in_middle() {
         let diff = DiffInfo::new(42, 42);
-        let msg_info = msg_info_from_subject("I moved Snowden to Russia");
-        let msg_info2 = msg_info_from_subject("I renamed C# to Java");
+        let msg_info = MessageInfo::new("I moved Snowden to Russia");
+        let msg_info2 = MessageInfo::new("I renamed C# to Java");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
-        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = classify(&ORDINARY_META, &diff, &msg_info2);
 
-        assert!(classes.contains(CommitClass::RefactorCommit));
-        assert!(classes2.contains(CommitClass::RefactorCommit));
+        assert!(classes.contains(Class::Refactor));
+        assert!(classes2.contains(Class::Refactor));
     }
 
     #[test]
     fn refactor_commit_is_classified_with_small_ins_del_diff() {
         let diff = DiffInfo::new(50, 52);
-        let msg_info = msg_info_from_subject("Move Snowden to Russia");
-        let msg_info2 = msg_info_from_subject("Rename C# to Java");
+        let msg_info = MessageInfo::new("Move Snowden to Russia");
+        let msg_info2 = MessageInfo::new("Rename C# to Java");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
-        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = classify(&ORDINARY_META, &diff, &msg_info2);
 
-        assert!(classes.contains(CommitClass::RefactorCommit));
-        assert!(classes2.contains(CommitClass::RefactorCommit));
+        assert!(classes.contains(Class::Refactor));
+        assert!(classes2.contains(Class::Refactor));
     }
 
     #[test]
     fn refactor_commit_is_not_classified_without_keywords() {
         let diff = DiffInfo::new(42, 42);
-        let msg_info = msg_info_from_subject("Improve character movement rendering");
-        let msg_info2 = msg_info_from_subject("Just for lulz bro");
+        let msg_info = MessageInfo::new("Improve character movement rendering");
+        let msg_info2 = MessageInfo::new("Just for lulz bro");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
-        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = classify(&ORDINARY_META, &diff, &msg_info2);
 
-        assert!(!classes.contains(CommitClass::RefactorCommit));
-        assert!(!classes2.contains(CommitClass::RefactorCommit));
+        assert!(!classes.contains(Class::Refactor));
+        assert!(!classes2.contains(Class::Refactor));
     }
 
     #[test]
     fn refactor_commit_is_not_classified_with_large_ins_del_diff() {
         let diff = DiffInfo::new(10, 500);
-        let msg_info = msg_info_from_subject("Move Snowden to Russia");
-        let msg_info2 = msg_info_from_subject("Rename C# to Java");
+        let msg_info = MessageInfo::new("Move Snowden to Russia");
+        let msg_info2 = MessageInfo::new("Rename C# to Java");
 
-        let classes = do_classify_commit(&ORDINARY_META, &diff, &msg_info);
-        let classes2 = do_classify_commit(&ORDINARY_META, &diff, &msg_info2);
+        let classes = classify(&ORDINARY_META, &diff, &msg_info);
+        let classes2 = classify(&ORDINARY_META, &diff, &msg_info2);
 
-        assert!(!classes.contains(CommitClass::RefactorCommit));
-        assert!(!classes2.contains(CommitClass::RefactorCommit));
-    }
-
-    fn msg_info_from_subject(subject: &str) -> MessageInfo {
-        MessageInfo::new(subject)
+        assert!(!classes.contains(Class::Refactor));
+        assert!(!classes2.contains(Class::Refactor));
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    commit::CommitMetadata,
+    commit::Metadata,
     scoring::{GradeSpec, Score, ScoredCommit},
 };
 
@@ -62,9 +62,9 @@ impl AuthorPreFilter {
 }
 
 impl Filter for AuthorPreFilter {
-    type Descriptor = CommitMetadata;
+    type Descriptor = Metadata;
 
-    fn accept(&self, metadata: &CommitMetadata) -> bool {
+    fn accept(&self, metadata: &Metadata) -> bool {
         self.author == metadata.author()
     }
 }
@@ -73,9 +73,9 @@ impl Filter for AuthorPreFilter {
 pub struct MergePreFilter;
 
 impl Filter for MergePreFilter {
-    type Descriptor = CommitMetadata;
+    type Descriptor = Metadata;
 
-    fn accept(&self, metadata: &CommitMetadata) -> bool {
+    fn accept(&self, metadata: &Metadata) -> bool {
         metadata.parents() <= 1
     }
 }

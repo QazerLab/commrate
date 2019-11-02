@@ -1,4 +1,4 @@
-use crate::commit::{CommitClass, CommitInfo};
+use crate::commit::{Class, Commit};
 use crate::scoring::{grade::Grade, rule::Rule, score::Score};
 
 pub struct Scorer {
@@ -37,14 +37,14 @@ impl ScorerBuilder {
 }
 
 impl Scorer {
-    pub fn score(&self, commit: CommitInfo) -> ScoredCommit {
+    pub fn score(&self, commit: Commit) -> ScoredCommit {
         let score = self.score_internal(&commit);
 
         ScoredCommit { commit, score }
     }
 
-    fn score_internal(&self, commit: &CommitInfo) -> Score {
-        if commit.classes().as_set().contains(CommitClass::MergeCommit) {
+    fn score_internal(&self, commit: &Commit) -> Score {
+        if commit.classes().as_set().contains(Class::Merge) {
             return Score::Ignored;
         }
 
@@ -73,12 +73,12 @@ impl Scorer {
 }
 
 pub struct ScoredCommit {
-    commit: CommitInfo,
+    commit: Commit,
     score: Score,
 }
 
 impl ScoredCommit {
-    pub fn commit(&self) -> &CommitInfo {
+    pub fn commit(&self) -> &Commit {
         &self.commit
     }
 

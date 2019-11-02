@@ -1,12 +1,12 @@
 /// A commit metadata, which is easy to obtain from
 /// the repository without any heavy processing.
-pub struct CommitMetadata {
+pub struct Metadata {
     id: String,
     author: String,
     parents: usize,
 }
 
-impl CommitMetadata {
+impl Metadata {
     pub fn new(id: String, author: String, parents: usize) -> Self {
         Self {
             id,

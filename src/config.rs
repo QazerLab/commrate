@@ -1,5 +1,5 @@
 use crate::{
-    commit::CommitMetadata,
+    commit::Metadata,
     filter::{AuthorPreFilter, Filter, FilterChain, GradePostFilter, MergePreFilter},
     scoring::{GradeSpec, ScoredCommit},
 };
@@ -8,7 +8,7 @@ use clap::{App, Arg, ArgMatches};
 use std::str::FromStr;
 
 pub struct AppConfig {
-    pre_filters: FilterChain<CommitMetadata>,
+    pre_filters: FilterChain<Metadata>,
     post_filters: FilterChain<ScoredCommit>,
     start_commit: String,
     max_commits: Option<usize>,
@@ -16,7 +16,7 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    pub fn pre_filters(&self) -> &FilterChain<CommitMetadata> {
+    pub fn pre_filters(&self) -> &FilterChain<Metadata> {
         &self.pre_filters
     }
 
@@ -120,8 +120,8 @@ where
     arg.parse::<T>().map_err(|s| s.to_string()).map(|_| ())
 }
 
-fn create_pre_filters(matches: &ArgMatches<'_>) -> FilterChain<CommitMetadata> {
-    let mut filters: Vec<Box<dyn Filter<Descriptor = CommitMetadata>>> = Vec::new();
+fn create_pre_filters(matches: &ArgMatches<'_>) -> FilterChain<Metadata> {
+    let mut filters: Vec<Box<dyn Filter<Descriptor = Metadata>>> = Vec::new();
 
     if let Some(author) = matches.value_of("author") {
         let filter = AuthorPreFilter::new(author);
