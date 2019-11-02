@@ -6,8 +6,8 @@ pub struct DiffInfo {
 }
 
 impl DiffInfo {
-    pub fn new(insertions: usize, deletions: usize) -> DiffInfo {
-        DiffInfo {
+    pub fn new(insertions: usize, deletions: usize) -> Self {
+        Self {
             insertions,
             deletions,
             diff_total: insertions + deletions,

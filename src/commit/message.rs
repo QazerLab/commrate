@@ -13,7 +13,7 @@ pub struct MessageInfo {
 }
 
 impl MessageInfo {
-    pub fn new(raw_message: &str) -> MessageInfo {
+    pub fn new(raw_message: &str) -> Self {
         let mut subject: Option<String> = None;
         let mut break_after_subject = false;
         let mut body_len = 0;
@@ -50,7 +50,7 @@ impl MessageInfo {
             }
         }
 
-        MessageInfo {
+        Self {
             subject,
             break_after_subject,
             body_len,

@@ -7,8 +7,8 @@ pub struct CommitMetadata {
 }
 
 impl CommitMetadata {
-    pub fn new(id: String, author: String, parents: usize) -> CommitMetadata {
-        CommitMetadata {
+    pub fn new(id: String, author: String, parents: usize) -> Self {
+        Self {
             id,
             author,
             parents,

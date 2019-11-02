@@ -17,10 +17,10 @@ pub struct CommitInfo {
 }
 
 impl CommitInfo {
-    pub fn new(metadata: CommitMetadata, diff_info: DiffInfo, msg_info: MessageInfo) -> CommitInfo {
+    pub fn new(metadata: CommitMetadata, diff_info: DiffInfo, msg_info: MessageInfo) -> Self {
         let classes = CommitClasses::classify_commit(&metadata, &diff_info, &msg_info);
 
-        CommitInfo {
+        Self {
             metadata,
             diff_info: Some(diff_info),
             msg_info,
@@ -28,10 +28,10 @@ impl CommitInfo {
         }
     }
 
-    pub fn new_from_merge(metadata: CommitMetadata, msg_info: MessageInfo) -> CommitInfo {
+    pub fn new_from_merge(metadata: CommitMetadata, msg_info: MessageInfo) -> Self {
         let classes = CommitClasses::from_set(EnumSet::from(CommitClass::MergeCommit));
 
-        CommitInfo {
+        Self {
             metadata,
             diff_info: None,
             msg_info,
