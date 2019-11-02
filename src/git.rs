@@ -1,4 +1,4 @@
-use crate::commit::{Commit, Metadata, DiffInfo, MessageInfo};
+use crate::commit::{Commit, DiffInfo, MessageInfo, Metadata};
 
 use colored::Colorize;
 use git2::{Commit as GitCommit, DiffStats, Error, Repository, Revwalk};
