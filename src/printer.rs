@@ -14,7 +14,7 @@ impl Printer {
     pub fn print_header(&self) {
         let score_title = if self.show_score { "SCORE" } else { "GRADE" };
 
-        println!("{:7} {:5} {:19} SUBJECT", "COMMIT", score_title, "AUTHOR");
+        println!("{:12} {:5} {:19} SUBJECT", "COMMIT", score_title, "AUTHOR");
     }
 
     pub fn print_commit(&self, scored_commit: &ScoredCommit) {
@@ -25,7 +25,7 @@ impl Printer {
         let score_colored = self.colorize_score(score);
 
         println!(
-            "{:7.7} {:<5} {:19.19} {}",
+            "{:.12} {:<5} {:19.19} {}",
             metadata.id().yellow(),
             score_colored,
             metadata.author(),
