@@ -1,6 +1,7 @@
 mod class;
 pub use class::{Class, Classes};
 
+#[allow(clippy::module_inception)]
 mod commit;
 pub use commit::Commit;
 
