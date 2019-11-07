@@ -54,7 +54,7 @@ There are some obvious exceptions to the last assumption: initial commits, some 
 Building Commrate
 =================
 
-This tool is written in Rust and requires Rust of version 1.37.0 at least.
+This tool is written in Rust and requires Rust of version 1.39.0 at least.
 
 To build `commrate`, [install](https://doc.rust-lang.org/cargo/getting-started/installation.html) `cargo` and run the following command:
 

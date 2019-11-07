@@ -17,13 +17,6 @@ pub enum Score {
 }
 
 impl Score {
-    // XXX: this attribute is a workaround for Clippy bug
-    // causing false positives when to_string() accepts
-    // more than one argument.
-    //
-    // This bug was fixed in 1.40.0, remove this attribute
-    // when 1.40.0-stable will be released.
-    #[allow(clippy::inherent_to_string)]
     pub fn to_string(self, use_score: bool) -> String {
         match self {
             Self::Ignored => "-".to_string(),
