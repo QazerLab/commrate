@@ -4,12 +4,6 @@ use crate::scoring::grade::Grade;
 pub enum Score {
     Ignored,
 
-    // XXX: this attribute is a workaround for compiler bug:
-    //
-    // https://github.com/rust-lang/rust/issues/64362
-    //
-    // Remove this attribute when the bug will be fixed.
-    #[allow(dead_code)]
     Scored {
         score: u8,
         grade: Grade,
